@@ -25,7 +25,8 @@ const DebugPage: React.FC = () => {
     drafts,
     saveDraft,
     loadDraft,
-    deleteDraft
+    deleteDraft,
+    sessions
   } = useAppStore();
 
   const [activeTab, setActiveTab] = useState<'params' | 'headers' | 'body'>('params');
@@ -35,7 +36,9 @@ const DebugPage: React.FC = () => {
   const [showMethodDropdown, setShowMethodDropdown] = useState(false);
   const [bodyType, setBodyType] = useState<'json' | 'form' | 'raw'>(currentRequest.bodyType || 'json');
   const [lastRecordId, setLastRecordId] = useState<string>('');
-  const [screenshotIds, setScreenshotIds] = useState<string[]>([]);
+  const [screenshotIds, setScreenshotIds] = useState<string[]>(() =>
+    [...(currentRequest.contextScreenshotIds || [])]
+  );
   const [showDraftPanel, setShowDraftPanel] = useState(false);
   const [draftName, setDraftName] = useState('');
   const [showSaveDraftModal, setShowSaveDraftModal] = useState(false);
@@ -47,6 +50,12 @@ const DebugPage: React.FC = () => {
   useEffect(() => {
     setBodyType(currentRequest.bodyType || 'json');
   }, [currentRequest.bodyType]);
+
+  useEffect(() => {
+    if (currentRequest.contextScreenshotIds && currentRequest.contextScreenshotIds.length > 0) {
+      setScreenshotIds(currentRequest.contextScreenshotIds);
+    }
+  }, [currentRequest.contextScreenshotIds]);
 
   const autoSaveDraft = useCallback(() => {
     if (autoSaveTimer.current) {
@@ -224,6 +233,7 @@ const DebugPage: React.FC = () => {
   const handleSaveManualDraft = () => {
     const name = draftName.trim() || currentRequest.name || currentRequest.url || '未命名草稿';
     saveDraft({
+      apiId: currentRequest.apiId,
       name,
       method: currentRequest.method,
       url: currentRequest.url,

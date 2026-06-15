@@ -13,7 +13,7 @@ const METHOD_FILTERS: (HttpMethod | 'ALL')[] = ['ALL', 'GET', 'POST', 'PUT', 'DE
 const STATUS_FILTERS = ['ALL', '2xx', '4xx', '5xx'];
 
 const HistoryPage: React.FC = () => {
-  const { history, removeHistory, clearHistory, setCurrentRequest, currentEnvId, environments } = useAppStore();
+  const { history, removeHistory, clearHistory, loadRecordToRequest } = useAppStore();
   const [methodFilter, setMethodFilter] = useState<HttpMethod | 'ALL'>('ALL');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
 
@@ -32,21 +32,7 @@ const HistoryPage: React.FC = () => {
   }, [history, methodFilter, statusFilter]);
 
   const handleRetry = (record: RequestRecord) => {
-    const env = environments.find(e => e.id === currentEnvId);
-    let url = record.url;
-    if (env) {
-      const path = record.url.replace(/^https?:\/\/[^/]+/, '');
-      url = env.baseUrl + path;
-    }
-    setCurrentRequest({
-      name: record.name,
-      method: record.method,
-      url,
-      headers: [...record.headers],
-      queryParams: [...record.queryParams],
-      body: record.body || '',
-      bodyType: record.bodyType || 'json'
-    });
+    loadRecordToRequest(record);
     Taro.switchTab({ url: '/pages/debug/index' });
   };
 

@@ -8,6 +8,7 @@ const STORAGE_KEYS = {
   DRAFTS: 'api_debug_drafts',
   SCREENSHOTS: 'api_debug_screenshots',
   CURRENT_REQUEST: 'api_debug_current_request',
+  SESSIONS: 'api_debug_sessions',
   INITIALIZED: 'api_debug_initialized'
 };
 

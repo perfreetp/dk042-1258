@@ -1,4 +1,4 @@
-import { RequestRecord, Issue, Screenshot, IssueActivity } from '@/types';
+import { RequestRecord, Issue, Screenshot, IssueActivity, DebugSession } from '@/types';
 
 const now = Date.now();
 
@@ -408,6 +408,89 @@ export const mockIssues: Issue[] = [
           oldStatus: 'resolved',
           newStatus: 'closed'
         }
+      }
+    ]
+  }
+];
+
+export const mockSessions: DebugSession[] = [
+  {
+    id: 'session-1',
+    title: '登录401排查',
+    description: '排查用户登录接口偶发401问题',
+    issueId: 'issue-1',
+    apiId: 'api-1',
+    status: 'active',
+    createdBy: '李四',
+    createdAt: now - 1000 * 60 * 60 * 24,
+    updatedAt: now - 1000 * 60 * 60 * 2,
+    recordIds: ['req-1', 'req-3'],
+    screenshotIds: ['screenshot-1'],
+    conclusion: '',
+    events: [
+      {
+        id: 'se-1',
+        type: 'request',
+        createdAt: now - 1000 * 60 * 60 * 24,
+        userId: 'user-2',
+        userName: '李四',
+        recordId: 'req-3'
+      },
+      {
+        id: 'se-2',
+        type: 'screenshot',
+        createdAt: now - 1000 * 60 * 60 * 10,
+        userId: 'user-2',
+        userName: '李四',
+        screenshotId: 'screenshot-1'
+      },
+      {
+        id: 'se-3',
+        type: 'comment',
+        createdAt: now - 1000 * 60 * 60 * 5,
+        userId: 'user-1',
+        userName: '张三',
+        comment: '正在排查Token生成逻辑，可能是并发问题'
+      },
+      {
+        id: 'se-4',
+        type: 'request',
+        createdAt: now - 1000 * 60 * 60 * 2,
+        userId: 'user-1',
+        userName: '张三',
+        recordId: 'req-1'
+      }
+    ]
+  },
+  {
+    id: 'session-2',
+    title: '创建订单500排查',
+    description: '创建订单接口库存不足时返回500',
+    issueId: 'issue-2',
+    apiId: 'api-8',
+    status: 'active',
+    createdBy: '李四',
+    createdAt: now - 1000 * 60 * 60 * 48,
+    updatedAt: now - 1000 * 60 * 60 * 5,
+    recordIds: ['req-4'],
+    screenshotIds: ['screenshot-2'],
+    conclusion: '',
+    events: [
+      {
+        id: 'se-5',
+        type: 'request',
+        createdAt: now - 1000 * 60 * 60 * 48,
+        userId: 'user-2',
+        userName: '李四',
+        recordId: 'req-4'
+      },
+      {
+        id: 'se-6',
+        type: 'screenshot',
+        createdAt: now - 1000 * 60 * 60 * 47,
+        userId: 'user-2',
+        userName: '李四',
+        screenshotId: 'screenshot-2'
       }
     ]
   }

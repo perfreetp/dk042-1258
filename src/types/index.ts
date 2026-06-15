@@ -17,7 +17,40 @@ export type ActivityType =
   | 'shared' 
   | 'assigned'
   | 'request_linked'
-  | 'description_updated';
+  | 'description_updated'
+  | 'session_created'
+  | 'request_added_to_session'
+  | 'conclusion_updated';
+
+export type SessionStatus = 'active' | 'resolved' | 'archived';
+
+export interface SessionEvent {
+  id: string;
+  type: 'request' | 'comment' | 'screenshot' | 'conclusion';
+  createdAt: number;
+  userId: string;
+  userName: string;
+  recordId?: string;
+  comment?: string;
+  screenshotId?: string;
+  conclusion?: string;
+}
+
+export interface DebugSession {
+  id: string;
+  title: string;
+  description?: string;
+  issueId?: string;
+  apiId?: string;
+  status: SessionStatus;
+  createdBy: string;
+  createdAt: number;
+  updatedAt: number;
+  events: SessionEvent[];
+  recordIds: string[];
+  screenshotIds: string[];
+  conclusion?: string;
+}
 
 export interface EnvironmentConfig {
   id: string;
@@ -77,6 +110,7 @@ export interface RequestRecord {
   assertNote?: string;
   screenshotIds?: string[];
   environmentId?: string;
+  sessionId?: string;
 }
 
 export interface ApiResponse {

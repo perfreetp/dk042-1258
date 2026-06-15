@@ -16,7 +16,7 @@ const STATUS_TABS: { key: IssueStatus | 'ALL'; label: string }[] = [
 ];
 
 const IssuesPage: React.FC = () => {
-  const { issues } = useAppStore();
+  const { issues, sessions } = useAppStore();
   const [activeStatus, setActiveStatus] = useState<IssueStatus | 'ALL'>('ALL');
 
   const stats = useMemo(() => {
@@ -174,6 +174,20 @@ const IssuesPage: React.FC = () => {
               <Text className={styles.issueAssignee}>
                 👤 {issue.assignee || '未分配'}
               </Text>
+              {sessions.find(s => s.issueId === issue.id) && (
+                <Text
+                  className={styles.sessionLink}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const session = sessions.find(s => s.issueId === issue.id);
+                    if (session) {
+                      Taro.navigateTo({ url: `/pages/session/index?id=${session.id}` });
+                    }
+                  }}
+                >
+                  🔗 排查会话
+                </Text>
+              )}
               <Text className={styles.issueTime}>
                 {formatRelativeTime(issue.updatedAt)}
               </Text>

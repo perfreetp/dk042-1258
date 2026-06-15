@@ -38,7 +38,7 @@ const PRIORITY_TEXT: Record<string, string> = {
 
 const ShareViewPage: React.FC = () => {
   const router = useRouter();
-  const { history, issues, screenshots: allScreenshots, setCurrentRequest, environments, currentEnvId } = useAppStore();
+  const { history, issues, screenshots: allScreenshots, environments, saveSharedRecord, loadRecordToRequest } = useAppStore();
 
   const shareType = router.params.type || 'record';
   const shareId = router.params.id;
@@ -99,35 +99,20 @@ const ShareViewPage: React.FC = () => {
       Taro.showToast({ title: '无可复现的请求', icon: 'none' });
       return;
     }
+    loadRecordToRequest(targetRecord);
+    Taro.switchTab({ url: '/pages/debug/index' });
+  };
 
-    const currentEnv = environments.find(e => e.id === currentEnvId);
-    let url = targetRecord.url;
-    if (currentEnv) {
-      const pathMatch = targetRecord.url.match(/^https?:\/\/[^/]+(.*)/);
-      if (pathMatch) {
-        url = currentEnv.baseUrl + pathMatch[1];
-      }
+  const handleSaveToHistory = () => {
+    if (shareType === 'record' && record) {
+      saveSharedRecord(record);
+      Taro.showToast({ title: '已保存到我的历史', icon: 'success' });
+    } else if (shareType === 'issue' && issue && linkedRecord) {
+      saveSharedRecord(linkedRecord);
+      Taro.showToast({ title: '已保存关联请求到我的历史', icon: 'success' });
+    } else {
+      Taro.showToast({ title: '无请求可保存', icon: 'none' });
     }
-
-    const envHeaders = currentEnv?.headers || [];
-    const nonEnvHeaderKeys = environments.flatMap(e => e.headers?.map(h => h.key) || []);
-    const filteredHeaders = targetRecord.headers.filter(h => !nonEnvHeaderKeys.includes(h.key));
-    const mergedHeaders = [...envHeaders, ...filteredHeaders];
-
-    setCurrentRequest({
-      name: targetRecord.name,
-      method: targetRecord.method,
-      url,
-      headers: mergedHeaders,
-      queryParams: [...targetRecord.queryParams],
-      body: targetRecord.body || '',
-      bodyType: targetRecord.bodyType || 'json',
-      assertNote: targetRecord.assertNote || ''
-    });
-
-    Taro.switchTab({
-      url: '/pages/debug/index'
-    });
   };
 
   const handlePreviewScreenshot = (url: string, allUrls: string[]) => {
@@ -356,6 +341,9 @@ const ShareViewPage: React.FC = () => {
       <View className={styles.actionBar}>
         <View className={styles.actionBtn} onClick={handleCopyParams}>
           📋 复制
+        </View>
+        <View className={styles.actionBtn} onClick={handleSaveToHistory}>
+          💾 保存
         </View>
         <View
           className={classnames(styles.actionBtn, styles.primaryBtn, !hasReplayTarget && { opacity: 0.5 })}

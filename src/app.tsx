@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useDidShow, useDidHide } from '@tarojs/taro';
 import './app.scss';
 import { AppContext, AppStore, initialState, AppState } from '@/store/appStore';
-import { RequestRecord, Issue, ApiItem, HttpMethod, IssueStatus, Draft, Screenshot, IssueActivity } from '@/types';
+import { RequestRecord, Issue, ApiItem, HttpMethod, IssueStatus, Draft, Screenshot, IssueActivity, DebugSession, SessionEvent } from '@/types';
 import { getStorageItem, setStorageItem, isFirstLaunch, markInitialized } from '@/utils/storage';
 import { generateId } from '@/utils/format';
 
@@ -13,7 +13,8 @@ const STORAGE_KEYS = {
   CURRENT_ENV: 'api_debug_current_env',
   DRAFTS: 'api_debug_drafts',
   SCREENSHOTS: 'api_debug_screenshots',
-  CURRENT_REQUEST: 'api_debug_current_request'
+  CURRENT_REQUEST: 'api_debug_current_request',
+  SESSIONS: 'api_debug_sessions'
 };
 
 function App(props) {
@@ -29,6 +30,7 @@ function App(props) {
     const savedDrafts = getStorageItem<Draft[]>(STORAGE_KEYS.DRAFTS, initialState.drafts);
     const savedScreenshots = getStorageItem<Screenshot[]>(STORAGE_KEYS.SCREENSHOTS, initialState.screenshots);
     const savedCurrentRequest = getStorageItem<AppState['currentRequest']>(STORAGE_KEYS.CURRENT_REQUEST, initialState.currentRequest);
+    const savedSessions = getStorageItem<DebugSession[]>(STORAGE_KEYS.SESSIONS, initialState.sessions);
 
     const apiGroupsWithFavorites = initialState.apiGroups.map(group => ({
       ...group,
@@ -47,6 +49,7 @@ function App(props) {
       drafts: savedDrafts,
       screenshots: savedScreenshots,
       currentRequest: savedCurrentRequest,
+      sessions: savedSessions,
       apiGroups: apiGroupsWithFavorites
     };
   });
@@ -140,9 +143,40 @@ function App(props) {
         }
       });
 
+      const autoDraft = prev.drafts.find(d => d.apiId === api.id && d.type === 'auto');
+      if (autoDraft) {
+        let draftUrl = autoDraft.url;
+        if (currentEnv && autoDraft.url) {
+          const pathMatch = autoDraft.url.match(/^https?:\/\/[^/]+(.*)/);
+          if (pathMatch) {
+            draftUrl = currentEnv.baseUrl + pathMatch[1];
+          }
+        }
+        const nonEnvHeaderKeys = prev.environments.flatMap(e => e.headers?.map(h => h.key) || []);
+        const filteredDraftHeaders = autoDraft.headers.filter(h => !nonEnvHeaderKeys.includes(h.key));
+        const draftMergedHeaders = [...envHeaders, ...filteredDraftHeaders];
+
+        return {
+          ...prev,
+          currentRequest: {
+            apiId: api.id,
+            name: autoDraft.name || api.name,
+            method: autoDraft.method,
+            url: draftUrl,
+            headers: draftMergedHeaders,
+            queryParams: [...autoDraft.queryParams],
+            body: autoDraft.body,
+            bodyType: autoDraft.bodyType,
+            assertNote: autoDraft.assertNote,
+            contextScreenshotIds: [...autoDraft.screenshotIds]
+          }
+        };
+      }
+
       return {
         ...prev,
         currentRequest: {
+          apiId: api.id,
           name: api.name,
           method: api.method as HttpMethod,
           url: fullUrl,
@@ -150,7 +184,44 @@ function App(props) {
           queryParams: api.queryParams ? [...api.queryParams] : [],
           body: api.body || '',
           bodyType: api.bodyType || 'json',
-          assertNote: ''
+          assertNote: '',
+          contextScreenshotIds: [],
+          sourceRecordId: undefined
+        }
+      };
+    });
+  }, []);
+
+  const loadRecordToRequest = useCallback((record: RequestRecord) => {
+    setState(prev => {
+      const currentEnv = prev.environments.find(e => e.id === prev.currentEnvId);
+      let url = record.url;
+      if (currentEnv) {
+        const pathMatch = record.url.match(/^https?:\/\/[^/]+(.*)/);
+        if (pathMatch) {
+          url = currentEnv.baseUrl + pathMatch[1];
+        }
+      }
+
+      const envHeaders = currentEnv?.headers || [];
+      const nonEnvHeaderKeys = prev.environments.flatMap(e => e.headers?.map(h => h.key) || []);
+      const filteredRecordHeaders = record.headers.filter(h => !nonEnvHeaderKeys.includes(h.key));
+      const mergedHeaders = [...envHeaders, ...filteredRecordHeaders];
+
+      return {
+        ...prev,
+        currentRequest: {
+          apiId: record.apiId,
+          name: record.name,
+          method: record.method,
+          url,
+          headers: mergedHeaders,
+          queryParams: [...record.queryParams],
+          body: record.body || '',
+          bodyType: record.bodyType || 'json',
+          assertNote: record.assertNote || '',
+          contextScreenshotIds: [...(record.screenshotIds || [])],
+          sourceRecordId: record.id
         }
       };
     });
@@ -275,6 +346,10 @@ function App(props) {
       issues: prev.issues.map(i => ({
         ...i,
         screenshotIds: i.screenshotIds?.filter(id => id !== screenshotId)
+      })),
+      sessions: prev.sessions.map(s => ({
+        ...s,
+        screenshotIds: s.screenshotIds?.filter(id => id !== screenshotId)
       }))
     }));
   }, []);
@@ -312,7 +387,25 @@ function App(props) {
               ]
             }
           : issue
-      )
+      ),
+      sessions: prev.sessions.map(session => {
+        if (!session.recordIds.includes(recordId)) return session;
+        return {
+          ...session,
+          screenshotIds: [...(session.screenshotIds || []), screenshotId],
+          events: [
+            ...session.events,
+            {
+              id: generateId(),
+              type: 'screenshot' as const,
+              createdAt: Date.now(),
+              userId: 'me',
+              userName: '我',
+              screenshotId
+            }
+          ]
+        };
+      })
     }));
   }, [state.screenshots]);
 
@@ -436,6 +529,7 @@ function App(props) {
       return {
         ...prev,
         currentRequest: {
+          apiId: draft.apiId,
           name: draft.name,
           method: draft.method,
           url,
@@ -443,7 +537,8 @@ function App(props) {
           queryParams: [...draft.queryParams],
           body: draft.body,
           bodyType: draft.bodyType,
-          assertNote: draft.assertNote
+          assertNote: draft.assertNote,
+          contextScreenshotIds: [...draft.screenshotIds]
         }
       };
     });
@@ -463,6 +558,89 @@ function App(props) {
     }));
   }, []);
 
+  const saveSharedRecord = useCallback((record: RequestRecord) => {
+    const newRecord: RequestRecord = {
+      ...record,
+      id: generateId(),
+      createdAt: Date.now(),
+      assertNote: ''
+    };
+    setState(prev => ({
+      ...prev,
+      history: [newRecord, ...prev.history]
+    }));
+  }, []);
+
+  const createSession = useCallback((sessionData: Omit<DebugSession, 'id' | 'createdAt' | 'updatedAt' | 'events'>): DebugSession => {
+    const now = Date.now();
+    const session: DebugSession = {
+      ...sessionData,
+      id: generateId(),
+      createdAt: now,
+      updatedAt: now,
+      events: [{
+        id: generateId(),
+        type: 'comment' as const,
+        createdAt: now,
+        userId: 'me',
+        userName: '我',
+        comment: '创建了调试会话'
+      }]
+    };
+    setState(prev => ({
+      ...prev,
+      sessions: [session, ...prev.sessions]
+    }));
+    return session;
+  }, []);
+
+  const updateSession = useCallback((sessionId: string, data: Partial<DebugSession>) => {
+    setState(prev => ({
+      ...prev,
+      sessions: prev.sessions.map(s =>
+        s.id === sessionId
+          ? { ...s, ...data, updatedAt: Date.now() }
+          : s
+      )
+    }));
+  }, []);
+
+  const addEventToSession = useCallback((sessionId: string, eventData: Omit<SessionEvent, 'id' | 'createdAt'>) => {
+    const event: SessionEvent = {
+      id: generateId(),
+      createdAt: Date.now(),
+      ...eventData
+    };
+    setState(prev => ({
+      ...prev,
+      sessions: prev.sessions.map(s =>
+        s.id === sessionId
+          ? {
+              ...s,
+              events: [...s.events, event],
+              updatedAt: Date.now(),
+              recordIds: eventData.type === 'request' && eventData.recordId
+                ? [...new Set([...s.recordIds, eventData.recordId])]
+                : s.recordIds,
+              screenshotIds: eventData.type === 'screenshot' && eventData.screenshotId
+                ? [...new Set([...s.screenshotIds, eventData.screenshotId])]
+                : s.screenshotIds,
+              conclusion: eventData.type === 'conclusion' && eventData.conclusion
+                ? eventData.conclusion
+                : s.conclusion
+            }
+          : s
+      )
+    }));
+  }, []);
+
+  const deleteSession = useCallback((sessionId: string) => {
+    setState(prev => ({
+      ...prev,
+      sessions: prev.sessions.filter(s => s.id !== sessionId)
+    }));
+  }, []);
+
   useEffect(() => {
     if (isFirstRender.current) {
       isFirstRender.current = false;
@@ -475,7 +653,8 @@ function App(props) {
     setStorageItem(STORAGE_KEYS.DRAFTS, state.drafts);
     setStorageItem(STORAGE_KEYS.SCREENSHOTS, state.screenshots);
     setStorageItem(STORAGE_KEYS.CURRENT_REQUEST, state.currentRequest);
-  }, [state.history, state.favorites, state.issues, state.currentEnvId, state.drafts, state.screenshots, state.currentRequest]);
+    setStorageItem(STORAGE_KEYS.SESSIONS, state.sessions);
+  }, [state.history, state.favorites, state.issues, state.currentEnvId, state.drafts, state.screenshots, state.currentRequest, state.sessions]);
 
   useDidShow(() => {
     console.log('[App] onShow');
@@ -494,6 +673,7 @@ function App(props) {
     clearHistory,
     setCurrentRequest,
     loadApiToRequest,
+    loadRecordToRequest,
     addIssue,
     updateIssueStatus,
     addIssueComment,
@@ -507,7 +687,12 @@ function App(props) {
     saveDraft,
     loadDraft,
     deleteDraft,
-    clearAutoDrafts
+    clearAutoDrafts,
+    saveSharedRecord,
+    createSession,
+    updateSession,
+    addEventToSession,
+    deleteSession
   };
 
   return (

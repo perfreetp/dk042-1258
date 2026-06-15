@@ -50,14 +50,13 @@ const IssueDetailPage: React.FC = () => {
     issues,
     updateIssueStatus,
     history,
-    setCurrentRequest,
-    environments,
-    currentEnvId,
+    loadRecordToRequest,
     addIssueComment,
     addScreenshot,
     addScreenshotToIssue,
     removeScreenshotFromIssue,
-    screenshots: allScreenshots
+    screenshots: allScreenshots,
+    sessions
   } = useAppStore();
   const [newComment, setNewComment] = useState('');
 
@@ -83,32 +82,7 @@ const IssueDetailPage: React.FC = () => {
 
   const handleReplayRequest = () => {
     if (!linkedRecord) return;
-
-    const currentEnv = environments.find(e => e.id === currentEnvId);
-    let url = linkedRecord.url;
-    if (currentEnv) {
-      const pathMatch = linkedRecord.url.match(/^https?:\/\/[^/]+(.*)/);
-      if (pathMatch) {
-        url = currentEnv.baseUrl + pathMatch[1];
-      }
-    }
-
-    const envHeaders = currentEnv?.headers || [];
-    const nonEnvHeaderKeys = environments.flatMap(e => e.headers?.map(h => h.key) || []);
-    const filteredRecordHeaders = linkedRecord.headers.filter(h => !nonEnvHeaderKeys.includes(h.key));
-    const mergedHeaders = [...envHeaders, ...filteredRecordHeaders];
-
-    setCurrentRequest({
-      name: linkedRecord.name,
-      method: linkedRecord.method,
-      url,
-      headers: mergedHeaders,
-      queryParams: [...linkedRecord.queryParams],
-      body: linkedRecord.body || '',
-      bodyType: linkedRecord.bodyType || 'json',
-      assertNote: linkedRecord.assertNote || ''
-    });
-
+    loadRecordToRequest(linkedRecord);
     Taro.switchTab({
       url: '/pages/debug/index'
     });
@@ -317,6 +291,29 @@ const IssueDetailPage: React.FC = () => {
               </View>
             </View>
           </View>
+        </View>
+      )}
+
+      {sessions.filter(s => s.issueId === issue.id).length > 0 && (
+        <View className={styles.sectionCard}>
+          <Text className={styles.sectionTitle}>🔬 调试会话</Text>
+          {sessions.filter(s => s.issueId === issue.id).map(session => (
+            <View
+              key={session.id}
+              className={styles.sessionCard}
+              onClick={() => Taro.navigateTo({ url: `/pages/session/index?id=${session.id}` })}
+            >
+              <View className={styles.sessionHeader}>
+                <Text className={styles.sessionTitle}>{session.title}</Text>
+                <View className={classnames(styles.sessionStatus, session.status === 'active' && styles.sessionActive, session.status === 'resolved' && styles.sessionResolved, session.status === 'archived' && styles.sessionArchived)}>
+                  {session.status === 'active' ? '进行中' : session.status === 'resolved' ? '已解决' : '已归档'}
+                </View>
+              </View>
+              <Text className={styles.sessionMeta}>
+                {session.recordIds.length} 次请求 · {session.events.length} 条记录
+              </Text>
+            </View>
+          ))}
         </View>
       )}
 

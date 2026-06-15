@@ -1,7 +1,7 @@
 import { createContext, useContext } from 'react';
-import { EnvironmentConfig, ApiGroup, RequestRecord, Issue, ApiItem, KeyValue, HttpMethod, Draft, Screenshot, IssueActivity } from '@/types';
+import { EnvironmentConfig, ApiGroup, RequestRecord, Issue, ApiItem, KeyValue, HttpMethod, Draft, Screenshot, IssueActivity, DebugSession, SessionEvent, SessionStatus } from '@/types';
 import { mockEnvironments, mockApiGroups } from '@/data/mockApis';
-import { mockHistory, mockIssues, mockScreenshots } from '@/data/mockHistory';
+import { mockHistory, mockIssues, mockScreenshots, mockSessions } from '@/data/mockHistory';
 
 export interface AppState {
   environments: EnvironmentConfig[];
@@ -11,7 +11,9 @@ export interface AppState {
   issues: Issue[];
   drafts: Draft[];
   screenshots: Screenshot[];
+  sessions: DebugSession[];
   currentRequest: {
+    apiId?: string;
     name: string;
     method: HttpMethod;
     url: string;
@@ -20,6 +22,8 @@ export interface AppState {
     body: string;
     bodyType: 'json' | 'form' | 'raw';
     assertNote: string;
+    contextScreenshotIds?: string[];
+    sourceRecordId?: string;
   };
   favorites: string[];
 }
@@ -32,6 +36,7 @@ export interface AppActions {
   clearHistory: () => void;
   setCurrentRequest: (request: Partial<AppState['currentRequest']>) => void;
   loadApiToRequest: (api: ApiItem) => void;
+  loadRecordToRequest: (record: RequestRecord) => void;
   addIssue: (issue: Issue) => void;
   updateIssueStatus: (issueId: string, status: Issue['status']) => void;
   addIssueComment: (issueId: string, comment: Issue['comments'][0]) => void;
@@ -46,6 +51,11 @@ export interface AppActions {
   loadDraft: (draftId: string) => void;
   deleteDraft: (draftId: string) => void;
   clearAutoDrafts: () => void;
+  saveSharedRecord: (record: RequestRecord) => void;
+  createSession: (session: Omit<DebugSession, 'id' | 'createdAt' | 'updatedAt' | 'events'>) => DebugSession;
+  updateSession: (sessionId: string, data: Partial<DebugSession>) => void;
+  addEventToSession: (sessionId: string, event: Omit<SessionEvent, 'id' | 'createdAt'>) => void;
+  deleteSession: (sessionId: string) => void;
 }
 
 export type AppStore = AppState & AppActions;
@@ -58,6 +68,7 @@ export const initialState: AppState = {
   issues: mockIssues,
   drafts: [],
   screenshots: mockScreenshots,
+  sessions: mockSessions,
   currentRequest: {
     name: '',
     method: 'GET',

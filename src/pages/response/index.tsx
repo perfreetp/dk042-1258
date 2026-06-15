@@ -12,9 +12,8 @@ const ResponsePage: React.FC = () => {
   const router = useRouter();
   const {
     history,
-    setCurrentRequest,
+    loadRecordToRequest,
     environments,
-    currentEnvId,
     addScreenshot,
     addScreenshotToRecord,
     removeScreenshotFromRecord,
@@ -34,32 +33,7 @@ const ResponsePage: React.FC = () => {
 
   const handleReplayRequest = () => {
     if (!record) return;
-
-    const currentEnv = environments.find(e => e.id === currentEnvId);
-    let url = record.url;
-    if (currentEnv) {
-      const pathMatch = record.url.match(/^https?:\/\/[^/]+(.*)/);
-      if (pathMatch) {
-        url = currentEnv.baseUrl + pathMatch[1];
-      }
-    }
-
-    const envHeaders = currentEnv?.headers || [];
-    const nonEnvHeaderKeys = environments.flatMap(e => e.headers?.map(h => h.key) || []);
-    const filteredRecordHeaders = record.headers.filter(h => !nonEnvHeaderKeys.includes(h.key));
-    const mergedHeaders = [...envHeaders, ...filteredRecordHeaders];
-
-    setCurrentRequest({
-      name: record.name,
-      method: record.method,
-      url,
-      headers: mergedHeaders,
-      queryParams: [...record.queryParams],
-      body: record.body || '',
-      bodyType: record.bodyType || 'json',
-      assertNote: record.assertNote || ''
-    });
-
+    loadRecordToRequest(record);
     Taro.switchTab({
       url: '/pages/debug/index'
     });

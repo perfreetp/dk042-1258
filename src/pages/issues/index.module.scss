@@ -191,6 +191,14 @@
   color: $color-text-secondary;
 }
 
+.sessionLink {
+  font-size: $font-size-sm;
+  color: $color-cyan;
+  padding: 2rpx 12rpx;
+  background: rgba(6, 182, 212, 0.1);
+  border-radius: $radius-xs;
+}
+
 .issueTime {
   font-size: $font-size-sm;
   color: $color-text-tertiary;

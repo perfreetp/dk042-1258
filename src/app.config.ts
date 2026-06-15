@@ -9,7 +9,8 @@ export default defineAppConfig({
     'pages/issue-detail/index',
     'pages/issue-create/index',
     'pages/share/index',
-    'pages/share-view/index'
+    'pages/share-view/index',
+    'pages/session/index'
   ],
   window: {
     backgroundTextStyle: 'dark',
