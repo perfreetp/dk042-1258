@@ -1,0 +1,177 @@
+@use '@/styles/variables.scss' as *;
+
+.page {
+  min-height: 100vh;
+  background: $color-bg-page;
+  padding: $spacing-md $page-padding $spacing-xl;
+}
+
+.header {
+  margin-bottom: $spacing-lg;
+}
+
+.title {
+  font-size: $font-size-xxl;
+  font-weight: $font-weight-bold;
+  color: $color-text-primary;
+  margin-bottom: $spacing-sm;
+}
+
+.subtitle {
+  font-size: $font-size-sm;
+  color: $color-text-tertiary;
+}
+
+.filterBar {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  margin-bottom: $spacing-lg;
+  flex-wrap: wrap;
+}
+
+.filterItem {
+  padding: $spacing-xs $spacing-md;
+  background: $color-bg-card;
+  border-radius: $radius-button;
+  font-size: $font-size-sm;
+  color: $color-text-secondary;
+  border: 1px solid transparent;
+  transition: all $transition-fast;
+
+  &.active {
+    background: rgba(99, 102, 241, 0.2);
+    color: $color-primary-light;
+    border-color: $color-primary-light;
+  }
+}
+
+.clearBtn {
+  margin-left: auto;
+  padding: $spacing-xs $spacing-md;
+  font-size: $font-size-sm;
+  color: $color-error;
+}
+
+.historyCard {
+  background: $color-bg-card;
+  border-radius: $radius-lg;
+  padding: $spacing-lg;
+  margin-bottom: $spacing-md;
+  box-shadow: $shadow-card;
+  transition: all $transition-base;
+
+  &:active {
+    opacity: 0.9;
+    transform: scale(0.99);
+  }
+}
+
+.cardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: $spacing-sm;
+}
+
+.cardLeft {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  flex: 1;
+}
+
+.apiName {
+  font-size: $font-size-md;
+  font-weight: $font-weight-semibold;
+  color: $color-text-primary;
+  @include text-ellipsis;
+  flex: 1;
+}
+
+.cardMeta {
+  display: flex;
+  align-items: center;
+  gap: $spacing-md;
+  margin-top: $spacing-sm;
+}
+
+.metaItem {
+  display: flex;
+  align-items: center;
+  gap: $spacing-xs;
+  font-size: $font-size-sm;
+  color: $color-text-secondary;
+}
+
+.urlText {
+  font-size: $font-size-sm;
+  color: $color-text-tertiary;
+  font-family: 'Menlo', 'Monaco', 'Consolas', monospace;
+  @include text-ellipsis;
+  margin-top: $spacing-xs;
+}
+
+.noteText {
+  font-size: $font-size-sm;
+  color: $color-cyan;
+  background: rgba(6, 182, 212, 0.1);
+  padding: $spacing-xs $spacing-sm;
+  border-radius: $radius-sm;
+  margin-top: $spacing-sm;
+  @include text-ellipsis-multi(2);
+}
+
+.cardActions {
+  display: flex;
+  gap: $spacing-sm;
+  margin-top: $spacing-md;
+  padding-top: $spacing-md;
+  border-top: 1px solid $color-divider;
+}
+
+.actionBtn {
+  @include button-reset;
+  flex: 1;
+  height: 64rpx;
+  background: $color-bg-hover;
+  border-radius: $radius-sm;
+  font-size: $font-size-sm;
+  color: $color-text-secondary;
+  transition: all $transition-fast;
+
+  &:active {
+    opacity: 0.8;
+  }
+
+  &.primary {
+    background: rgba(99, 102, 241, 0.2);
+    color: $color-primary-light;
+  }
+
+  &.danger {
+    color: $color-error;
+  }
+}
+
+.emptyState {
+  text-align: center;
+  padding: $spacing-xl * 2 $spacing-lg;
+}
+
+.emptyIcon {
+  font-size: 120rpx;
+  margin-bottom: $spacing-md;
+  opacity: 0.5;
+}
+
+.emptyText {
+  font-size: $font-size-md;
+  color: $color-text-tertiary;
+  margin-bottom: $spacing-sm;
+}
+
+.emptyHint {
+  font-size: $font-size-sm;
+  color: $color-text-disabled;
+}

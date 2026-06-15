@@ -1,0 +1,112 @@
+@use '@/styles/variables.scss' as *;
+
+.page {
+  min-height: 100vh;
+  background: $color-bg-page;
+  padding: $spacing-md $page-padding $spacing-xl;
+}
+
+.header {
+  margin-bottom: $spacing-lg;
+}
+
+.title {
+  font-size: $font-size-xxl;
+  font-weight: $font-weight-bold;
+  color: $color-text-primary;
+  margin-bottom: $spacing-md;
+}
+
+.searchBar {
+  display: flex;
+  align-items: center;
+  background: $color-bg-card;
+  border-radius: $radius-md;
+  padding: $spacing-sm $spacing-md;
+  margin-bottom: $spacing-md;
+  border: 1px solid $color-border;
+}
+
+.searchIcon {
+  color: $color-text-tertiary;
+  margin-right: $spacing-sm;
+  font-size: $font-size-lg;
+}
+
+.searchInput {
+  flex: 1;
+  background: transparent;
+  color: $color-text-primary;
+  font-size: $font-size-md;
+  border: none;
+  outline: none;
+}
+
+.envSection {
+  margin-bottom: $spacing-lg;
+}
+
+.groupTabs {
+  display: flex;
+  @include scroll-x-container;
+  margin-bottom: $spacing-md;
+}
+
+.groupTab {
+  @include scroll-x-item('auto');
+  padding: $spacing-sm $spacing-lg;
+  margin-right: $spacing-sm;
+  background: $color-bg-card;
+  border-radius: $radius-md;
+  color: $color-text-secondary;
+  font-size: $font-size-sm;
+  white-space: nowrap;
+  transition: all $transition-fast;
+
+  &.active {
+    background: linear-gradient(135deg, $color-primary 0%, $color-primary-light 100%);
+    color: $color-text-white;
+    font-weight: $font-weight-medium;
+  }
+}
+
+.favoriteSection {
+  margin-bottom: $spacing-xl;
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: $spacing-md;
+}
+
+.sectionTitle {
+  font-size: $font-size-lg;
+  font-weight: $font-weight-semibold;
+  color: $color-text-primary;
+}
+
+.sectionCount {
+  font-size: $font-size-sm;
+  color: $color-text-tertiary;
+  background: $color-bg-card;
+  padding: $spacing-xs $spacing-sm;
+  border-radius: $radius-sm;
+}
+
+.groupTitle {
+  font-size: $font-size-md;
+  font-weight: $font-weight-semibold;
+  color: $color-text-primary;
+  margin: $spacing-md 0;
+  padding-left: $spacing-sm;
+  border-left: 4rpx solid $color-primary-light;
+}
+
+.emptyState {
+  text-align: center;
+  padding: $spacing-xl $spacing-lg;
+  color: $color-text-tertiary;
+  font-size: $font-size-sm;
+}

@@ -1,0 +1,266 @@
+@use '@/styles/variables.scss' as *;
+
+.page {
+  min-height: 100vh;
+  background: $color-bg-page;
+  padding: $spacing-md $page-padding $spacing-xl;
+}
+
+.issueHeader {
+  background: $color-bg-card;
+  border-radius: $radius-lg;
+  padding: $spacing-lg;
+  margin-bottom: $spacing-lg;
+  box-shadow: $shadow-card;
+  border-left: 6rpx solid $color-warning;
+}
+
+.issueTitle {
+  font-size: $font-size-xl;
+  font-weight: $font-weight-bold;
+  color: $color-text-primary;
+  margin-bottom: $spacing-md;
+  line-height: 1.4;
+}
+
+.issueMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-sm;
+  margin-bottom: $spacing-md;
+}
+
+.tag {
+  padding: 4rpx 12rpx;
+  border-radius: $radius-xs;
+  font-size: $font-size-xs;
+}
+
+.statusBadge {
+  font-weight: $font-weight-medium;
+}
+
+.statusPending { background: rgba(245, 158, 11, 0.15); color: $color-warning; }
+.statusProcessing { background: rgba(59, 130, 246, 0.15); color: $color-info; }
+.statusResolved { background: rgba(16, 185, 129, 0.15); color: $color-success; }
+.statusClosed { background: rgba(100, 116, 139, 0.15); color: $color-text-secondary; }
+
+.priorityCritical { background: rgba(239, 68, 68, 0.2); color: $color-error; }
+.priorityHigh { background: rgba(245, 158, 11, 0.2); color: $color-warning; }
+.priorityMedium { background: rgba(59, 130, 246, 0.2); color: $color-info; }
+.priorityLow { background: rgba(100, 116, 139, 0.2); color: $color-text-secondary; }
+
+.labelTag {
+  background: rgba(99, 102, 241, 0.15);
+  color: $color-primary-light;
+}
+
+.issueInfo {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-md;
+  padding-top: $spacing-md;
+  border-top: 1px solid $color-divider;
+}
+
+.infoItem {
+  font-size: $font-size-sm;
+  color: $color-text-secondary;
+}
+
+.sectionTitle {
+  font-size: $font-size-md;
+  font-weight: $font-weight-semibold;
+  color: $color-text-primary;
+  margin-bottom: $spacing-md;
+  padding-left: $spacing-sm;
+  border-left: 4rpx solid $color-primary-light;
+}
+
+.sectionCard {
+  background: $color-bg-card;
+  border-radius: $radius-lg;
+  padding: $spacing-lg;
+  margin-bottom: $spacing-lg;
+  box-shadow: $shadow-card;
+}
+
+.descText {
+  font-size: $font-size-sm;
+  color: $color-text-secondary;
+  line-height: 1.8;
+}
+
+.statusActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-sm;
+  margin-top: $spacing-md;
+}
+
+.statusBtn {
+  @include button-reset;
+  padding: $spacing-sm $spacing-md;
+  background: $color-bg-hover;
+  border-radius: $radius-button;
+  font-size: $font-size-sm;
+  color: $color-text-secondary;
+  transition: all $transition-fast;
+
+  &.active {
+    background: linear-gradient(135deg, $color-primary 0%, $color-primary-light 100%);
+    color: $color-text-white;
+  }
+
+  &:active {
+    opacity: 0.9;
+  }
+}
+
+.commentList {
+  max-height: 600rpx;
+  overflow-y: auto;
+}
+
+.commentItem {
+  padding: $spacing-md 0;
+  border-bottom: 1px solid $color-divider;
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.commentHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: $spacing-xs;
+}
+
+.commentUser {
+  font-size: $font-size-sm;
+  font-weight: $font-weight-medium;
+  color: $color-text-primary;
+}
+
+.commentTime {
+  font-size: $font-size-xs;
+  color: $color-text-tertiary;
+}
+
+.commentContent {
+  font-size: $font-size-sm;
+  color: $color-text-secondary;
+  line-height: 1.6;
+}
+
+.screenshotGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-md;
+}
+
+.screenshotItem {
+  width: 200rpx;
+  height: 200rpx;
+  background: $color-bg-input;
+  border-radius: $radius-md;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 48rpx;
+}
+
+.inputRow {
+  display: flex;
+  gap: $spacing-sm;
+  margin-top: $spacing-md;
+}
+
+.commentInput {
+  flex: 1;
+  background: $color-bg-input;
+  border-radius: $radius-md;
+  padding: $spacing-sm $spacing-md;
+  color: $color-text-primary;
+  font-size: $font-size-sm;
+  border: 1px solid $color-border;
+}
+
+.submitBtn {
+  @include button-reset;
+  padding: 0 $spacing-lg;
+  background: linear-gradient(135deg, $color-primary 0%, $color-primary-light 100%);
+  border-radius: $radius-md;
+  color: $color-text-white;
+  font-size: $font-size-sm;
+  font-weight: $font-weight-medium;
+}
+
+.actionRow {
+  display: flex;
+  gap: $spacing-md;
+  margin-top: $spacing-lg;
+}
+
+.secondaryBtn {
+  @include button-reset;
+  flex: 1;
+  height: 80rpx;
+  background: $color-bg-card;
+  border: 1px solid $color-border;
+  border-radius: $radius-button;
+  color: $color-text-secondary;
+  font-size: $font-size-md;
+  transition: all $transition-base;
+
+  &:active {
+    background: $color-bg-hover;
+  }
+}
+
+.primaryBtn {
+  @include button-reset;
+  flex: 1;
+  height: 80rpx;
+  background: linear-gradient(135deg, $color-primary 0%, $color-primary-light 100%);
+  border: none;
+  border-radius: $radius-button;
+  color: $color-text-white;
+  font-size: $font-size-md;
+  font-weight: $font-weight-semibold;
+  transition: all $transition-base;
+
+  &:active {
+    opacity: 0.9;
+    transform: scale(0.98);
+  }
+}
+
+.requestLink {
+  display: flex;
+  align-items: center;
+  background: rgba(99, 102, 241, 0.1);
+  border-radius: $radius-md;
+  padding: $spacing-md;
+  margin-top: $spacing-md;
+  border: 1px solid rgba(99, 102, 241, 0.2);
+}
+
+.linkIcon {
+  font-size: $font-size-lg;
+  margin-right: $spacing-sm;
+}
+
+.linkText {
+  flex: 1;
+  font-size: $font-size-sm;
+  color: $color-primary-light;
+  font-weight: $font-weight-medium;
+}
+
+.linkArrow {
+  color: $color-primary-light;
+  font-size: $font-size-md;
+}

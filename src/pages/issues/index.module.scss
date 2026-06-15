@@ -1,0 +1,213 @@
+@use '@/styles/variables.scss' as *;
+
+.page {
+  min-height: 100vh;
+  background: $color-bg-page;
+  padding: $spacing-md $page-padding $spacing-xl;
+}
+
+.header {
+  margin-bottom: $spacing-lg;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.headerLeft {
+  flex: 1;
+}
+
+.title {
+  font-size: $font-size-xxl;
+  font-weight: $font-weight-bold;
+  color: $color-text-primary;
+  margin-bottom: $spacing-xs;
+}
+
+.subtitle {
+  font-size: $font-size-sm;
+  color: $color-text-tertiary;
+}
+
+.addBtn {
+  @include button-reset;
+  width: 72rpx;
+  height: 72rpx;
+  background: linear-gradient(135deg, $color-primary 0%, $color-primary-light 100%);
+  border-radius: 50%;
+  color: $color-text-white;
+  font-size: $font-size-xl;
+  font-weight: $font-weight-bold;
+}
+
+.statsRow {
+  display: flex;
+  gap: $spacing-md;
+  margin-bottom: $spacing-lg;
+}
+
+.statCard {
+  flex: 1;
+  background: $color-bg-card;
+  border-radius: $radius-lg;
+  padding: $spacing-md;
+  text-align: center;
+  box-shadow: $shadow-card;
+}
+
+.statCount {
+  font-size: $font-size-xxl;
+  font-weight: $font-weight-bold;
+  color: $color-text-primary;
+  margin-bottom: $spacing-xs;
+}
+
+.statLabel {
+  font-size: $font-size-xs;
+  color: $color-text-secondary;
+}
+
+.statPending .statCount { color: $color-warning; }
+.statProcessing .statCount { color: $color-info; }
+.statResolved .statCount { color: $color-success; }
+.statClosed .statCount { color: $color-text-tertiary; }
+
+.statusTabs {
+  display: flex;
+  @include scroll-x-container;
+  margin-bottom: $spacing-lg;
+}
+
+.statusTab {
+  @include scroll-x-item('auto');
+  padding: $spacing-sm $spacing-lg;
+  margin-right: $spacing-sm;
+  background: $color-bg-card;
+  border-radius: $radius-md;
+  color: $color-text-secondary;
+  font-size: $font-size-sm;
+  white-space: nowrap;
+  transition: all $transition-fast;
+
+  &.active {
+    background: linear-gradient(135deg, $color-primary 0%, $color-primary-light 100%);
+    color: $color-text-white;
+    font-weight: $font-weight-medium;
+  }
+}
+
+.issueCard {
+  background: $color-bg-card;
+  border-radius: $radius-lg;
+  padding: $spacing-lg;
+  margin-bottom: $spacing-md;
+  box-shadow: $shadow-card;
+  border-left: 6rpx solid transparent;
+  transition: all $transition-base;
+
+  &:active {
+    opacity: 0.9;
+    transform: scale(0.99);
+  }
+}
+
+.issuePending { border-left-color: $color-warning; }
+.issueProcessing { border-left-color: $color-info; }
+.issueResolved { border-left-color: $color-success; }
+.issueClosed { border-left-color: $color-text-tertiary; }
+
+.issueHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: $spacing-sm;
+}
+
+.issueTitle {
+  flex: 1;
+  font-size: $font-size-md;
+  font-weight: $font-weight-semibold;
+  color: $color-text-primary;
+  @include text-ellipsis-multi(2);
+  margin-right: $spacing-sm;
+}
+
+.priorityBadge {
+  padding: 4rpx 12rpx;
+  border-radius: $radius-xs;
+  font-size: $font-size-xs;
+  font-weight: $font-weight-medium;
+}
+
+.priorityCritical { background: rgba(239, 68, 68, 0.2); color: $color-error; }
+.priorityHigh { background: rgba(245, 158, 11, 0.2); color: $color-warning; }
+.priorityMedium { background: rgba(59, 130, 246, 0.2); color: $color-info; }
+.priorityLow { background: rgba(100, 116, 139, 0.2); color: $color-text-secondary; }
+
+.issueDesc {
+  font-size: $font-size-sm;
+  color: $color-text-secondary;
+  @include text-ellipsis-multi(2);
+  margin-bottom: $spacing-sm;
+}
+
+.issueMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-sm;
+  margin-bottom: $spacing-sm;
+}
+
+.labelTag {
+  padding: 4rpx 12rpx;
+  background: rgba(99, 102, 241, 0.15);
+  color: $color-primary-light;
+  border-radius: $radius-xs;
+  font-size: $font-size-xs;
+}
+
+.statusBadge {
+  padding: 4rpx 12rpx;
+  border-radius: $radius-xs;
+  font-size: $font-size-xs;
+  font-weight: $font-weight-medium;
+}
+
+.statusPending { background: rgba(245, 158, 11, 0.15); color: $color-warning; }
+.statusProcessing { background: rgba(59, 130, 246, 0.15); color: $color-info; }
+.statusResolved { background: rgba(16, 185, 129, 0.15); color: $color-success; }
+.statusClosed { background: rgba(100, 116, 139, 0.15); color: $color-text-secondary; }
+
+.issueFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: $spacing-sm;
+  border-top: 1px solid $color-divider;
+}
+
+.issueAssignee {
+  font-size: $font-size-sm;
+  color: $color-text-secondary;
+}
+
+.issueTime {
+  font-size: $font-size-sm;
+  color: $color-text-tertiary;
+}
+
+.emptyState {
+  text-align: center;
+  padding: $spacing-xl * 2 $spacing-lg;
+}
+
+.emptyIcon {
+  font-size: 120rpx;
+  margin-bottom: $spacing-md;
+  opacity: 0.5;
+}
+
+.emptyText {
+  font-size: $font-size-md;
+  color: $color-text-tertiary;
+}
