@@ -26,7 +26,12 @@ const DebugPage: React.FC = () => {
     saveDraft,
     loadDraft,
     deleteDraft,
-    sessions
+    renameDraft,
+    duplicateDraft,
+    sessions,
+    createSession,
+    addEventToSession,
+    history
   } = useAppStore();
 
   const [activeTab, setActiveTab] = useState<'params' | 'headers' | 'body'>('params');
@@ -44,6 +49,13 @@ const DebugPage: React.FC = () => {
   const [showSaveDraftModal, setShowSaveDraftModal] = useState(false);
   const autoSaveTimer = useRef<NodeJS.Timeout | null>(null);
   const autoDraftId = useRef<string>('');
+  const [showSessionModal, setShowSessionModal] = useState(false);
+  const [sessionActionType, setSessionActionType] = useState<'new' | 'append'>('new');
+  const [sessionTitle, setSessionTitle] = useState('');
+  const [sessionDescription, setSessionDescription] = useState('');
+  const [showRenameModal, setShowRenameModal] = useState(false);
+  const [renameDraftId, setRenameDraftId] = useState<string>('');
+  const [renameValue, setRenameValue] = useState('');
 
   const screenshots = screenshotIds.map(id => allScreenshots.find(s => s.id === id)).filter(Boolean) as any[];
 
@@ -52,8 +64,17 @@ const DebugPage: React.FC = () => {
   }, [currentRequest.bodyType]);
 
   useEffect(() => {
+    if (currentRequest.apiId) {
+      const autoDraft = drafts.find(d => d.apiId === currentRequest.apiId && d.type === 'auto');
+      autoDraftId.current = autoDraft?.id || '';
+    } else {
+      autoDraftId.current = '';
+    }
+  }, [currentRequest.apiId, drafts]);
+
+  useEffect(() => {
     if (currentRequest.contextScreenshotIds && currentRequest.contextScreenshotIds.length > 0) {
-      setScreenshotIds(currentRequest.contextScreenshotIds);
+      setScreenshotIds([...currentRequest.contextScreenshotIds]);
     }
   }, [currentRequest.contextScreenshotIds]);
 
@@ -156,6 +177,18 @@ const DebugPage: React.FC = () => {
       addHistory(record);
       setLastRecordId(recordId);
 
+      if (currentRequest.sourceRecordId) {
+        const sourceRec = history.find(h => h.id === currentRequest.sourceRecordId);
+        if (sourceRec?.sessionId) {
+          addEventToSession(sourceRec.sessionId, {
+            type: 'request',
+            userId: 'me',
+            userName: '我',
+            recordId
+          });
+        }
+      }
+
       screenshotIds.forEach(sid => {
         addScreenshotToRecord(recordId, sid);
       });
@@ -256,6 +289,14 @@ const DebugPage: React.FC = () => {
     if (draft) {
       setScreenshotIds([...draft.screenshotIds]);
       setBodyType(draft.bodyType);
+      if (draft.type === 'auto') {
+        autoDraftId.current = draft.id;
+      } else if (draft.apiId) {
+        const autoDraft = drafts.find(d => d.apiId === draft.apiId && d.type === 'auto');
+        autoDraftId.current = autoDraft?.id || '';
+      } else {
+        autoDraftId.current = '';
+      }
     }
     setShowDraftPanel(false);
     Taro.showToast({ title: '已加载草稿', icon: 'success' });
@@ -267,6 +308,102 @@ const DebugPage: React.FC = () => {
     if (autoDraftId.current === draftId) {
       autoDraftId.current = '';
     }
+  };
+
+  const handleOpenNewSessionModal = () => {
+    setSessionActionType('new');
+    setSessionTitle(currentRequest.name || currentRequest.url || '未命名会话');
+    setSessionDescription(currentRequest.assertNote || '');
+    setShowSessionModal(true);
+  };
+
+  const handleOpenAppendSessionModal = () => {
+    if (sessions.length === 0) {
+      Taro.showToast({ title: '暂无可追加的会话', icon: 'none' });
+      return;
+    }
+    setSessionActionType('append');
+    setShowSessionModal(true);
+  };
+
+  const handleCreateSessionAndAppend = () => {
+    const title = sessionTitle.trim() || '未命名会话';
+    const session = createSession({
+      title,
+      description: sessionDescription,
+      apiId: currentRequest.apiId,
+      status: 'active',
+      createdBy: '我',
+      recordIds: lastRecordId ? [lastRecordId] : [],
+      screenshotIds: [...screenshotIds],
+      conclusion: ''
+    });
+    if (lastRecordId) {
+      addEventToSession(session.id, {
+        type: 'request',
+        userId: 'me',
+        userName: '我',
+        recordId: lastRecordId
+      });
+    }
+    screenshotIds.forEach(sid => {
+      addEventToSession(session.id, {
+        type: 'screenshot',
+        userId: 'me',
+        userName: '我',
+        screenshotId: sid
+      });
+    });
+    setShowSessionModal(false);
+    setSessionTitle('');
+    setSessionDescription('');
+    Taro.navigateTo({ url: `/pages/session/index?id=${session.id}` });
+  };
+
+  const handleAppendToSession = (sessionId: string) => {
+    if (lastRecordId) {
+      addEventToSession(sessionId, {
+        type: 'request',
+        userId: 'me',
+        userName: '我',
+        recordId: lastRecordId
+      });
+    }
+    screenshotIds.forEach(sid => {
+      addEventToSession(sessionId, {
+        type: 'screenshot',
+        userId: 'me',
+        userName: '我',
+        screenshotId: sid
+      });
+    });
+    setShowSessionModal(false);
+    Taro.navigateTo({ url: `/pages/session/index?id=${sessionId}` });
+  };
+
+  const handleRenameDraft = (draftId: string, currentName: string) => {
+    setRenameDraftId(draftId);
+    setRenameValue(currentName);
+    setShowRenameModal(true);
+  };
+
+  const handleConfirmRename = () => {
+    if (!renameDraftId) return;
+    const name = renameValue.trim();
+    if (!name) {
+      Taro.showToast({ title: '请输入草稿名称', icon: 'none' });
+      return;
+    }
+    renameDraft(renameDraftId, name);
+    setShowRenameModal(false);
+    setRenameDraftId('');
+    setRenameValue('');
+    Taro.showToast({ title: '已重命名', icon: 'success' });
+  };
+
+  const handleDuplicateDraft = (draftId: string) => {
+    duplicateDraft(draftId);
+    Taro.showToast({ title: '已复制一份草稿', icon: 'success' });
   };
 
   const handleNoteChange = (e: any) => {
@@ -546,6 +683,32 @@ const DebugPage: React.FC = () => {
         <View className={styles.secondaryBtn} onClick={() => setShowSaveDraftModal(true)}>
           💾 存为草稿
         </View>
+        <View className={styles.sessionActions}>
+          <View
+            className={classnames(styles.sessionBtn, !lastRecordId && { opacity: 0.5 })}
+            onClick={() => {
+              if (!lastRecordId) {
+                Taro.showToast({ title: '请先发送请求', icon: 'none' });
+                return;
+              }
+              handleOpenNewSessionModal();
+            }}
+          >
+            🆕 新建会话
+          </View>
+          <View
+            className={classnames(styles.sessionBtn, !lastRecordId && { opacity: 0.5 })}
+            onClick={() => {
+              if (!lastRecordId) {
+                Taro.showToast({ title: '请先发送请求', icon: 'none' });
+                return;
+              }
+              handleOpenAppendSessionModal();
+            }}
+          >
+            ➕ 加入会话
+          </View>
+        </View>
         <View
           className={classnames(styles.primaryBtn, !response && styles.disabled)}
           onClick={handleViewDetail}
@@ -564,34 +727,85 @@ const DebugPage: React.FC = () => {
               </Text>
             </View>
             <ScrollView className={styles.draftList} scrollY>
-              {apiDrafts.length === 0 && (
-                <View className={styles.draftEmpty}>
-                  <Text>暂无草稿</Text>
-                </View>
-              )}
-              {apiDrafts.map(draft => (
-                <View key={draft.id} className={styles.draftItem} onClick={() => handleLoadDraft(draft.id)}>
-                  <View className={styles.draftItemHeader}>
-                    <MethodTag method={draft.method} />
-                    <Text className={styles.draftItemName}>{draft.name}</Text>
-                    {draft.type === 'auto' && (
-                      <Text className={styles.draftAutoTag}>自动</Text>
+              {(() => {
+                const apiDrafts = drafts.filter(d => 
+                  currentRequest.apiId ? d.apiId === currentRequest.apiId : !d.apiId
+                );
+                const autoDrafts = apiDrafts.filter(d => d.type === 'auto');
+                const manualDrafts = apiDrafts.filter(d => d.type === 'manual');
+                const otherDrafts = drafts.filter(d => 
+                  currentRequest.apiId ? d.apiId !== currentRequest.apiId : !!d.apiId
+                );
+                const allEmpty = apiDrafts.length === 0 && otherDrafts.length === 0;
+
+                const renderDraftCard = (draft: any) => (
+                  <View key={draft.id} className={styles.draftItem} onClick={() => handleLoadDraft(draft.id)}>
+                    <View className={styles.draftItemHeader}>
+                      <MethodTag method={draft.method} />
+                      <Text className={styles.draftItemName}>{draft.name}</Text>
+                      {draft.type === 'auto' && (
+                        <Text className={styles.draftAutoTag}>自动</Text>
+                      )}
+                    </View>
+                    <Text className={styles.draftItemUrl} numberOfLines={1}>
+                      {draft.url}
+                    </Text>
+                    <View className={styles.draftItemFooter}>
+                      <Text className={styles.draftItemTime}>
+                        {formatRelativeTime(draft.updatedAt)}
+                      </Text>
+                      <View className={styles.draftItemActions}>
+                        <Text
+                          className={styles.draftItemAction}
+                          onClick={(e) => { e.stopPropagation(); handleRenameDraft(draft.id, draft.name); }}
+                        >
+                          ✏️
+                        </Text>
+                        <Text
+                          className={styles.draftItemAction}
+                          onClick={(e) => { e.stopPropagation(); handleDuplicateDraft(draft.id); }}
+                        >
+                          📋
+                        </Text>
+                        <Text
+                          className={styles.draftItemAction}
+                          onClick={(e) => handleDeleteDraft(e, draft.id)}
+                        >
+                          🗑️
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
+                );
+
+                return (
+                  <>
+                    {allEmpty && (
+                      <View className={styles.draftEmpty}>
+                        <Text>暂无草稿</Text>
+                      </View>
                     )}
-                  </View>
-                  <Text className={styles.draftItemUrl}>{draft.url}</Text>
-                  <View className={styles.draftItemFooter}>
-                    <Text className={styles.draftItemTime}>
-                      {formatRelativeTime(draft.updatedAt)}
-                    </Text>
-                    <Text
-                      className={styles.draftItemDelete}
-                      onClick={(e) => handleDeleteDraft(e, draft.id)}
-                    >
-                      删除
-                    </Text>
-                  </View>
-                </View>
-              ))}
+                    {autoDrafts.length > 0 && (
+                      <>
+                        <Text className={styles.draftSectionTitle}>自动草稿</Text>
+                        {autoDrafts.map(renderDraftCard)}
+                      </>
+                    )}
+                    {manualDrafts.length > 0 && (
+                      <>
+                        <Text className={styles.draftSectionTitle}>手动草稿</Text>
+                        {manualDrafts.map(renderDraftCard)}
+                      </>
+                    )}
+                    {otherDrafts.length > 0 && (
+                      <>
+                        <Text className={styles.draftSectionTitle}>其他接口草稿</Text>
+                        {otherDrafts.map(renderDraftCard)}
+                      </>
+                    )}
+                  </>
+                );
+              })()}
             </ScrollView>
           </View>
         </View>
@@ -618,6 +832,85 @@ const DebugPage: React.FC = () => {
               <View className={styles.modalConfirmBtn} onClick={handleSaveManualDraft}>
                 保存
               </View>
+            </View>
+          </View>
+        </View>
+      )}
+
+      {showSessionModal && (
+        <View className={styles.modalMask} onClick={() => setShowSessionModal(false)}>
+          <View className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+            <Text className={styles.modalTitle}>
+              {sessionActionType === 'new' ? '新建调试会话' : '追加到会话'}
+            </Text>
+            {sessionActionType === 'new' ? (
+              <>
+                <Text className={styles.modalLabel}>会话标题</Text>
+                <Input
+                  className={styles.modalInput}
+                  placeholder="请输入会话标题"
+                  placeholderTextColor="#64748B"
+                  value={sessionTitle}
+                  onInput={(e) => setSessionTitle(e.detail.value)}
+                />
+                <Text className={styles.modalLabel}>问题描述（选填）</Text>
+                <Textarea
+                  className={styles.modalTextarea}
+                  placeholder="描述你要排查的问题..."
+                  placeholderTextColor="#64748B"
+                  value={sessionDescription}
+                  onInput={(e) => setSessionDescription(e.detail.value)}
+                />
+                <View className={styles.modalActions}>
+                  <View className={styles.modalCancel} onClick={() => setShowSessionModal(false)}>取消</View>
+                  <View className={styles.modalConfirm} onClick={handleCreateSessionAndAppend}>创建</View>
+                </View>
+              </>
+            ) : (
+              <>
+                <ScrollView scrollY style={{ maxHeight: '60vh' }}>
+                  {sessions.map(session => (
+                    <View key={session.id} className={styles.sessionItem} onClick={() => handleAppendToSession(session.id)}>
+                      <View className={styles.sessionItemHeader}>
+                        <Text className={styles.sessionItemTitle}>{session.title}</Text>
+                        <View className={classnames(
+                          styles.sessionItemStatus,
+                          session.status === 'active' && styles.sessionStatusActive,
+                          session.status === 'resolved' && styles.sessionStatusResolved,
+                          session.status === 'archived' && styles.sessionStatusArchived
+                        )}>
+                          {session.status === 'active' ? '进行中' : session.status === 'resolved' ? '已解决' : '已归档'}
+                        </View>
+                      </View>
+                      <Text className={styles.sessionItemMeta}>
+                        {session.recordIds.length} 次请求 · {session.events.length} 条记录
+                      </Text>
+                    </View>
+                  ))}
+                </ScrollView>
+                <View className={styles.modalActions}>
+                  <View className={styles.modalCancel} onClick={() => setShowSessionModal(false)}>取消</View>
+                </View>
+              </>
+            )}
+          </View>
+        </View>
+      )}
+
+      {showRenameModal && (
+        <View className={styles.modalMask} onClick={() => setShowRenameModal(false)}>
+          <View className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+            <Text className={styles.modalTitle}>重命名草稿</Text>
+            <Input
+              className={styles.modalInput}
+              placeholder="请输入新的草稿名称"
+              placeholderTextColor="#64748B"
+              value={renameValue}
+              onInput={(e) => setRenameValue(e.detail.value)}
+            />
+            <View className={styles.modalActions}>
+              <View className={styles.modalCancel} onClick={() => setShowRenameModal(false)}>取消</View>
+              <View className={styles.modalConfirm} onClick={handleConfirmRename}>确定</View>
             </View>
           </View>
         </View>

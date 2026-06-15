@@ -17,7 +17,10 @@ const ResponsePage: React.FC = () => {
     addScreenshot,
     addScreenshotToRecord,
     removeScreenshotFromRecord,
-    screenshots: allScreenshots
+    screenshots: allScreenshots,
+    sessions,
+    createSession,
+    addEventToSession
   } = useAppStore();
   const [activeTab, setActiveTab] = useState<'body' | 'headers' | 'request'>('body');
 
@@ -119,6 +122,67 @@ const ResponsePage: React.FC = () => {
     });
   };
 
+  const handleCreateSession = () => {
+    if (!record) return;
+    const session = createSession({
+      title: record.name || record.url || '未命名会话',
+      description: record.assertNote || '',
+      apiId: record.apiId,
+      issueId: undefined,
+      status: 'active',
+      createdBy: '我',
+      recordIds: [record.id],
+      screenshotIds: [...(record.screenshotIds || [])],
+      conclusion: ''
+    });
+    addEventToSession(session.id, {
+      type: 'request',
+      userId: 'me',
+      userName: '我',
+      recordId: record.id
+    });
+    (record.screenshotIds || []).forEach(sid => {
+      addEventToSession(session.id, {
+        type: 'screenshot',
+        userId: 'me',
+        userName: '我',
+        screenshotId: sid
+      });
+    });
+    Taro.navigateTo({ url: `/pages/session/index?id=${session.id}` });
+  };
+
+  const [showAppendModal, setShowAppendModal] = useState(false);
+
+  const handleOpenAppendModal = () => {
+    if (!record) return;
+    if (sessions.length === 0) {
+      Taro.showToast({ title: '暂无可追加的会话', icon: 'none' });
+      return;
+    }
+    setShowAppendModal(true);
+  };
+
+  const handleAppendToSession = (sessionId: string) => {
+    if (!record) return;
+    addEventToSession(sessionId, {
+      type: 'request',
+      userId: 'me',
+      userName: '我',
+      recordId: record.id
+    });
+    (record.screenshotIds || []).forEach(sid => {
+      addEventToSession(sessionId, {
+        type: 'screenshot',
+        userId: 'me',
+        userName: '我',
+        screenshotId: sid
+      });
+    });
+    setShowAppendModal(false);
+    Taro.navigateTo({ url: `/pages/session/index?id=${sessionId}` });
+  };
+
   if (!record) {
     return (
       <View className={styles.page}>
@@ -164,6 +228,8 @@ const ResponsePage: React.FC = () => {
       </View>
 
       <View className={styles.actionButtons}>
+        <View className={styles.actionBtn} onClick={handleCreateSession}>🆕 建会话</View>
+        <View className={styles.actionBtn} onClick={handleOpenAppendModal}>➕ 加会话</View>
         <View className={styles.actionBtn} onClick={handleReplayRequest}>
           🔄 复现请求
         </View>
@@ -314,6 +380,36 @@ const ResponsePage: React.FC = () => {
       </View>
 
       <View style={{ height: 40 }} />
+      {showAppendModal && (
+        <View className={styles.modalMask} onClick={() => setShowAppendModal(false)}>
+          <View className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+            <Text className={styles.modalTitle}>追加到会话</Text>
+            <ScrollView scrollY style={{ maxHeight: '60vh' }}>
+              {sessions.map(session => (
+                <View key={session.id} className={styles.sessionItem} onClick={() => handleAppendToSession(session.id)}>
+                  <View className={styles.sessionItemHeader}>
+                    <Text className={styles.sessionItemTitle}>{session.title}</Text>
+                    <View className={classnames(
+                      styles.sessionItemStatus,
+                      session.status === 'active' && styles.sessionStatusActive,
+                      session.status === 'resolved' && styles.sessionStatusResolved,
+                      session.status === 'archived' && styles.sessionStatusArchived
+                    )}>
+                      {session.status === 'active' ? '进行中' : session.status === 'resolved' ? '已解决' : '已归档'}
+                    </View>
+                  </View>
+                  <Text className={styles.sessionItemMeta}>
+                    {session.recordIds.length} 次请求 · {session.events.length} 条记录
+                  </Text>
+                </View>
+              ))}
+            </ScrollView>
+            <View className={styles.modalActions}>
+              <View className={styles.modalCancel} onClick={() => setShowAppendModal(false)}>取消</View>
+            </View>
+          </View>
+        </View>
+      )}
     </ScrollView>
   );
 };

@@ -51,6 +51,8 @@ export interface AppActions {
   loadDraft: (draftId: string) => void;
   deleteDraft: (draftId: string) => void;
   clearAutoDrafts: () => void;
+  renameDraft: (draftId: string, newName: string) => void;
+  duplicateDraft: (draftId: string) => Draft;
   saveSharedRecord: (record: RequestRecord) => void;
   createSession: (session: Omit<DebugSession, 'id' | 'createdAt' | 'updatedAt' | 'events'>) => DebugSession;
   updateSession: (sessionId: string, data: Partial<DebugSession>) => void;

@@ -558,12 +558,44 @@ function App(props) {
     }));
   }, []);
 
+  const renameDraft = useCallback((draftId: string, newName: string) => {
+    setState(prev => ({
+      ...prev,
+      drafts: prev.drafts.map(d =>
+        d.id === draftId
+          ? { ...d, name: newName, updatedAt: Date.now() }
+          : d
+      )
+    }));
+  }, []);
+
+  const duplicateDraft = useCallback((draftId: string): Draft => {
+    let newDraft: Draft = {} as Draft;
+    setState(prev => {
+      const draft = prev.drafts.find(d => d.id === draftId);
+      if (!draft) return prev;
+      const now = Date.now();
+      newDraft = {
+        ...draft,
+        id: generateId(),
+        name: `${draft.name} (副本)`,
+        type: 'manual',
+        createdAt: now,
+        updatedAt: now
+      };
+      return {
+        ...prev,
+        drafts: [newDraft, ...prev.drafts]
+      };
+    });
+    return newDraft;
+  }, []);
+
   const saveSharedRecord = useCallback((record: RequestRecord) => {
     const newRecord: RequestRecord = {
       ...record,
       id: generateId(),
-      createdAt: Date.now(),
-      assertNote: ''
+      createdAt: Date.now()
     };
     setState(prev => ({
       ...prev,
@@ -688,6 +720,8 @@ function App(props) {
     loadDraft,
     deleteDraft,
     clearAutoDrafts,
+    renameDraft,
+    duplicateDraft,
     saveSharedRecord,
     createSession,
     updateSession,

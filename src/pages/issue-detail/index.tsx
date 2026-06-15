@@ -56,7 +56,9 @@ const IssueDetailPage: React.FC = () => {
     addScreenshotToIssue,
     removeScreenshotFromIssue,
     screenshots: allScreenshots,
-    sessions
+    sessions,
+    createSession,
+    addEventToSession
   } = useAppStore();
   const [newComment, setNewComment] = useState('');
 
@@ -148,6 +150,84 @@ const IssueDetailPage: React.FC = () => {
     e.stopPropagation();
     if (!issue) return;
     removeScreenshotFromIssue(issue.id, id);
+  };
+
+  const [showSessionModal, setShowSessionModal] = useState(false);
+  const [sessionModalType, setSessionModalType] = useState<'new' | 'append'>('new');
+  const [sessionTitle, setSessionTitle] = useState('');
+  const [sessionDescription, setSessionDescription] = useState('');
+
+  const handleCreateSessionFromIssue = () => {
+    setSessionModalType('new');
+    setSessionTitle(issue?.title || '未命名会话');
+    setSessionDescription(issue?.description || '');
+    setShowSessionModal(true);
+  };
+
+  const handleAppendSessionFromIssue = () => {
+    if (sessions.length === 0) {
+      Taro.showToast({ title: '暂无可追加的会话', icon: 'none' });
+      return;
+    }
+    setSessionModalType('append');
+    setShowSessionModal(true);
+  };
+
+  const handleSubmitNewSession = () => {
+    if (!issue) return;
+    const title = sessionTitle.trim() || issue.title || '未命名会话';
+    const recordIds = linkedRecord ? [linkedRecord.id] : [];
+    const session = createSession({
+      title,
+      description: sessionDescription,
+      apiId: issue.apiId,
+      issueId: issue.id,
+      status: 'active',
+      createdBy: '我',
+      recordIds,
+      screenshotIds: [...(issue.screenshotIds || [])],
+      conclusion: ''
+    });
+    if (linkedRecord) {
+      addEventToSession(session.id, {
+        type: 'request',
+        userId: 'me',
+        userName: '我',
+        recordId: linkedRecord.id
+      });
+    }
+    (issue.screenshotIds || []).forEach(sid => {
+      addEventToSession(session.id, {
+        type: 'screenshot',
+        userId: 'me',
+        userName: '我',
+        screenshotId: sid
+      });
+    });
+    setShowSessionModal(false);
+    Taro.navigateTo({ url: `/pages/session/index?id=${session.id}` });
+  };
+
+  const handleAppendExistingSession = (sessionId: string) => {
+    if (!issue) return;
+    if (linkedRecord) {
+      addEventToSession(sessionId, {
+        type: 'request',
+        userId: 'me',
+        userName: '我',
+        recordId: linkedRecord.id
+      });
+    }
+    (issue.screenshotIds || []).forEach(sid => {
+      addEventToSession(sessionId, {
+        type: 'screenshot',
+        userId: 'me',
+        userName: '我',
+        screenshotId: sid
+      });
+    });
+    setShowSessionModal(false);
+    Taro.navigateTo({ url: `/pages/session/index?id=${sessionId}` });
   };
 
   const getNextStatus = () => {
@@ -318,7 +398,19 @@ const IssueDetailPage: React.FC = () => {
       )}
 
       <View className={styles.sectionCard}>
-        <Text className={styles.sectionTitle}>📸 错误截图</Text>
+        <Text className={styles.sectionTitle}>� 会话操作</Text>
+        <View className={styles.actionRow}>
+          <View className={styles.issueActionBtn} onClick={handleCreateSessionFromIssue}>
+            🆕 新建调试会话
+          </View>
+          <View className={styles.issueActionBtn} onClick={handleAppendSessionFromIssue}>
+            ➕ 追加到已有会话
+          </View>
+        </View>
+      </View>
+
+      <View className={styles.sectionCard}>
+        <Text className={styles.sectionTitle}>� 错误截图</Text>
         <View className={styles.screenshotGrid}>
           {screenshots.map((s) => (
             <View
@@ -393,6 +485,65 @@ const IssueDetailPage: React.FC = () => {
       </View>
 
       <View style={{ height: 40 }} />
+      {showSessionModal && (
+        <View className={styles.modalMask} onClick={() => setShowSessionModal(false)}>
+          <View className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+            <Text className={styles.modalTitle}>
+              {sessionModalType === 'new' ? '从问题创建会话' : '追加到会话'}
+            </Text>
+            {sessionModalType === 'new' ? (
+              <>
+                <Text className={styles.modalLabel}>会话标题</Text>
+                <Input
+                  className={styles.modalInput}
+                  placeholder="请输入会话标题"
+                  placeholderTextColor="#64748B"
+                  value={sessionTitle}
+                  onInput={(e) => setSessionTitle(e.detail.value)}
+                />
+                <Text className={styles.modalLabel}>问题描述（选填）</Text>
+                <Textarea
+                  className={styles.modalTextarea}
+                  placeholder="描述你要排查的问题..."
+                  placeholderTextColor="#64748B"
+                  value={sessionDescription}
+                  onInput={(e) => setSessionDescription(e.detail.value)}
+                />
+                <View className={styles.modalActions}>
+                  <View className={styles.modalCancel} onClick={() => setShowSessionModal(false)}>取消</View>
+                  <View className={styles.modalConfirm} onClick={handleSubmitNewSession}>创建</View>
+                </View>
+              </>
+            ) : (
+              <>
+                <ScrollView scrollY style={{ maxHeight: '60vh' }}>
+                  {sessions.map(session => (
+                    <View key={session.id} className={styles.sessionItem} onClick={() => handleAppendExistingSession(session.id)}>
+                      <View className={styles.sessionItemHeader}>
+                        <Text className={styles.sessionItemTitle}>{session.title}</Text>
+                        <View className={classnames(
+                          styles.sessionItemStatus,
+                          session.status === 'active' && styles.sessionStatusActive,
+                          session.status === 'resolved' && styles.sessionStatusResolved,
+                          session.status === 'archived' && styles.sessionStatusArchived
+                        )}>
+                          {session.status === 'active' ? '进行中' : session.status === 'resolved' ? '已解决' : '已归档'}
+                        </View>
+                      </View>
+                      <Text className={styles.sessionItemMeta}>
+                        {session.recordIds.length} 次请求 · {session.events.length} 条记录
+                      </Text>
+                    </View>
+                  ))}
+                </ScrollView>
+                <View className={styles.modalActions}>
+                  <View className={styles.modalCancel} onClick={() => setShowSessionModal(false)}>取消</View>
+                </View>
+              </>
+            )}
+          </View>
+        </View>
+      )}
     </ScrollView>
   );
 };
