@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { View, Text, Input, ScrollView } from '@tarojs/components';
+import { View, Text, Input, ScrollView, Image } from '@tarojs/components';
 import Taro, { useRouter } from '@tarojs/taro';
 import styles from './index.module.scss';
 import { useAppStore } from '@/store/appStore';
@@ -17,12 +17,12 @@ const STATUS_OPTIONS: { key: IssueStatus; label: string }[] = [
 
 const IssueDetailPage: React.FC = () => {
   const router = useRouter();
-  const { issues, updateIssueStatus, history, setCurrentRequest, environments, currentEnvId } = useAppStore();
+  const { issues, updateIssueStatus, history, setCurrentRequest, environments, currentEnvId, addIssueComment, addScreenshotToIssue } = useAppStore();
   const [newComment, setNewComment] = useState('');
 
   const issue = useMemo(() => {
     const id = router.params.id;
-    return issues.find(i => i.id === id) || issues[0];
+    return issues.find(i => i.id === id) || null;
   }, [router.params.id, issues]);
 
   if (!issue) {
@@ -102,13 +102,50 @@ const IssueDetailPage: React.FC = () => {
 
   const handleSubmitComment = () => {
     if (!newComment.trim()) return;
-    Taro.showToast({ title: '评论已发送', icon: 'success' });
+    if (!issue) return;
+
+    const comment = {
+      id: Date.now().toString(),
+      userId: 'me',
+      userName: '我',
+      content: newComment.trim(),
+      createdAt: Date.now(),
+      attachments: []
+    };
+
+    addIssueComment(issue.id, comment);
     setNewComment('');
+    Taro.showToast({ title: '评论已发送', icon: 'success' });
   };
 
   const handleShare = () => {
     Taro.navigateTo({
       url: `/pages/share/index?type=issue&id=${issue.id}`
+    });
+  };
+
+  const handleChooseImage = () => {
+    if (!issue) return;
+    const currentScreenshots = issue.screenshots || [];
+    Taro.chooseImage({
+      count: 9 - currentScreenshots.length,
+      sizeType: ['compressed'],
+      sourceType: ['album', 'camera'],
+      success: (res) => {
+        if (res.tempFilePaths.length > 0) {
+          res.tempFilePaths.forEach(path => {
+            addScreenshotToIssue(issue.id, path);
+          });
+        }
+      }
+    });
+  };
+
+  const handlePreviewScreenshot = (url: string) => {
+    const allScreenshots = issue?.screenshots || [];
+    Taro.previewImage({
+      urls: allScreenshots,
+      current: url
     });
   };
 
@@ -181,11 +218,33 @@ const IssueDetailPage: React.FC = () => {
         <View className={styles.sectionCard}>
           <Text className={styles.sectionTitle}>📸 错误截图</Text>
           <View className={styles.screenshotGrid}>
-            {issue.screenshots.map((_, i) => (
-              <View key={i} className={styles.screenshotItem}>
-                🖼️
+            {issue.screenshots.map((url, i) => (
+              <View
+                key={i}
+                className={styles.screenshotItem}
+                onClick={() => handlePreviewScreenshot(url)}
+              >
+                <Image src={url} mode="aspectFill" />
               </View>
             ))}
+            {issue.screenshots.length < 9 && (
+              <View className={styles.screenshotAdd} onClick={handleChooseImage}>
+                <Text className={styles.addIcon}>+</Text>
+                <Text>上传</Text>
+              </View>
+            )}
+          </View>
+        </View>
+      )}
+
+      {(!issue.screenshots || issue.screenshots.length === 0) && (
+        <View className={styles.sectionCard}>
+          <Text className={styles.sectionTitle}>📸 错误截图</Text>
+          <View className={styles.screenshotGrid}>
+            <View className={styles.screenshotAdd} onClick={handleChooseImage}>
+              <Text className={styles.addIcon}>+</Text>
+              <Text>上传</Text>
+            </View>
           </View>
         </View>
       )}

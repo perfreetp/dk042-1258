@@ -409,3 +409,56 @@
   font-family: 'Menlo', 'Monaco', 'Consolas', monospace;
   word-break: break-all;
 }
+
+.screenshotSection {
+  margin-top: $spacing-lg;
+}
+
+.screenshotTitle {
+  font-size: $font-size-sm;
+  color: $color-text-secondary;
+  margin-bottom: $spacing-sm;
+}
+
+.screenshotGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-sm;
+}
+
+.screenshotItem {
+  width: 160rpx;
+  height: 160rpx;
+  background: $color-bg-input;
+  border-radius: $radius-md;
+  border: 1px solid $color-border;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 48rpx;
+  overflow: hidden;
+
+  image {
+    width: 100%;
+    height: 100%;
+  }
+}
+
+.screenshotAdd {
+  width: 160rpx;
+  height: 160rpx;
+  background: $color-bg-input;
+  border-radius: $radius-md;
+  border: 2rpx dashed $color-border;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: $color-text-tertiary;
+  font-size: $font-size-sm;
+  gap: $spacing-xs;
+
+  .addIcon {
+    font-size: 40rpx;
+  }
+}

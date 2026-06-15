@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { View, Text, ScrollView } from '@tarojs/components';
+import { View, Text, ScrollView, Image } from '@tarojs/components';
 import Taro, { useRouter } from '@tarojs/taro';
 import styles from './index.module.scss';
 import { useAppStore } from '@/store/appStore';
@@ -10,12 +10,12 @@ import classnames from 'classnames';
 
 const ResponsePage: React.FC = () => {
   const router = useRouter();
-  const { history, setCurrentRequest, environments, currentEnvId } = useAppStore();
+  const { history, setCurrentRequest, environments, currentEnvId, addScreenshotToRecord } = useAppStore();
   const [activeTab, setActiveTab] = useState<'body' | 'headers' | 'request'>('body');
 
   const record = useMemo(() => {
     const id = router.params.id;
-    return history.find(h => h.id === id) || history[0];
+    return history.find(h => h.id === id) || null;
   }, [router.params.id, history]);
 
   if (!record) {
@@ -54,7 +54,33 @@ const ResponsePage: React.FC = () => {
   };
 
   const handleCreateIssue = () => {
-    Taro.showToast({ title: '创建问题功能开发中', icon: 'none' });
+    Taro.navigateTo({
+      url: `/pages/issue-create/index?recordId=${record.id}`
+    });
+  };
+
+  const handleChooseImage = () => {
+    const currentScreenshots = record?.screenshots || [];
+    Taro.chooseImage({
+      count: 9 - currentScreenshots.length,
+      sizeType: ['compressed'],
+      sourceType: ['album', 'camera'],
+      success: (res) => {
+        if (record && res.tempFilePaths.length > 0) {
+          res.tempFilePaths.forEach(path => {
+            addScreenshotToRecord(record.id, path);
+          });
+        }
+      }
+    });
+  };
+
+  const handlePreviewScreenshot = (url: string) => {
+    const allScreenshots = record?.screenshots || [];
+    Taro.previewImage({
+      urls: allScreenshots,
+      current: url
+    });
   };
 
   return (
@@ -169,18 +195,26 @@ const ResponsePage: React.FC = () => {
         )}
       </View>
 
-      {record.screenshots && record.screenshots.length > 0 && (
-        <View className={styles.screenshotSection}>
-          <Text className={styles.sectionTitle}>📸 错误截图</Text>
-          <View className={styles.screenshotGrid}>
-            {record.screenshots.map((_, i) => (
-              <View key={i} className={styles.screenshotItem}>
-                🖼️
-              </View>
-            ))}
-          </View>
+      <View className={styles.screenshotSection}>
+        <Text className={styles.sectionTitle}>📸 错误截图</Text>
+        <View className={styles.screenshotGrid}>
+          {record.screenshots?.map((url, i) => (
+            <View
+              key={i}
+              className={styles.screenshotItem}
+              onClick={() => handlePreviewScreenshot(url)}
+            >
+              <Image src={url} mode="aspectFill" />
+            </View>
+          ))}
+          {(!record.screenshots || record.screenshots.length < 9) && (
+            <View className={styles.screenshotAdd} onClick={handleChooseImage}>
+              <Text className={styles.addIcon}>+</Text>
+              <Text>上传</Text>
+            </View>
+          )}
         </View>
-      )}
+      </View>
 
       <View className={styles.actionRow}>
         <View className={styles.secondaryBtn} onClick={handleShare}>

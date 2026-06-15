@@ -7,6 +7,7 @@ export default defineAppConfig({
     'pages/mine/index',
     'pages/response/index',
     'pages/issue-detail/index',
+    'pages/issue-create/index',
     'pages/share/index'
   ],
   window: {

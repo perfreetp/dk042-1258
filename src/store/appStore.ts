@@ -32,6 +32,9 @@ export interface AppActions {
   loadApiToRequest: (api: ApiItem) => void;
   addIssue: (issue: Issue) => void;
   updateIssueStatus: (issueId: string, status: Issue['status']) => void;
+  addIssueComment: (issueId: string, comment: Issue['comments'][0]) => void;
+  addScreenshotToRecord: (recordId: string, screenshot: string) => void;
+  addScreenshotToIssue: (issueId: string, screenshot: string) => void;
 }
 
 export type AppStore = AppState & AppActions;

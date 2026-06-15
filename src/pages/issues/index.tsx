@@ -34,7 +34,9 @@ const IssuesPage: React.FC = () => {
   }, [issues, activeStatus]);
 
   const handleAddIssue = () => {
-    Taro.showToast({ title: '新建问题功能开发中', icon: 'none' });
+    Taro.navigateTo({
+      url: '/pages/issue-create/index'
+    });
   };
 
   const handleIssueClick = (issue: Issue) => {

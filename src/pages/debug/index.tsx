@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, Input, Textarea, ScrollView } from '@tarojs/components';
+import { View, Text, Input, Textarea, ScrollView, Image } from '@tarojs/components';
 import Taro from '@tarojs/taro';
 import styles from './index.module.scss';
 import { useAppStore } from '@/store/appStore';
@@ -14,7 +14,7 @@ import classnames from 'classnames';
 const HTTP_METHODS: HttpMethod[] = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'HEAD', 'OPTIONS'];
 
 const DebugPage: React.FC = () => {
-  const { currentRequest, setCurrentRequest, addHistory, currentEnvId } = useAppStore();
+  const { currentRequest, setCurrentRequest, addHistory, currentEnvId, addScreenshotToRecord } = useAppStore();
   const [activeTab, setActiveTab] = useState<'params' | 'headers' | 'body'>('params');
   const [activeResponseTab, setActiveResponseTab] = useState<'body' | 'headers'>('body');
   const [response, setResponse] = useState<ApiResponse | null>(null);
@@ -22,6 +22,8 @@ const DebugPage: React.FC = () => {
   const [showMethodDropdown, setShowMethodDropdown] = useState(false);
   const [assertNote, setAssertNote] = useState('');
   const [bodyType, setBodyType] = useState<'json' | 'form' | 'raw'>(currentRequest.bodyType || 'json');
+  const [lastRecordId, setLastRecordId] = useState<string>('');
+  const [screenshots, setScreenshots] = useState<string[]>([]);
 
   const updateKeyValue = (list: KeyValue[], index: number, field: 'key' | 'value', value: string): KeyValue[] => {
     const newList = [...list];
@@ -68,8 +70,9 @@ const DebugPage: React.FC = () => {
 
       setResponse(resp);
 
+      const recordId = generateId();
       const record = {
-        id: generateId(),
+        id: recordId,
         name: currentRequest.name || currentRequest.url,
         method: currentRequest.method,
         url: currentRequest.url,
@@ -80,9 +83,11 @@ const DebugPage: React.FC = () => {
         createdAt: Date.now(),
         response: resp,
         assertNote,
-        environmentId: currentEnvId
+        environmentId: currentEnvId,
+        screenshots: [...screenshots]
       };
       addHistory(record);
+      setLastRecordId(recordId);
 
       if (resp.status >= 200 && resp.status < 300) {
         Taro.showToast({ title: '请求成功', icon: 'success' });
@@ -101,10 +106,35 @@ const DebugPage: React.FC = () => {
     Taro.showToast({ title: '调试已保存', icon: 'success' });
   };
 
+  const handleChooseImage = () => {
+    Taro.chooseImage({
+      count: 9 - screenshots.length,
+      sizeType: ['compressed'],
+      sourceType: ['album', 'camera'],
+      success: (res) => {
+        const newScreenshots = [...screenshots, ...res.tempFilePaths];
+        setScreenshots(newScreenshots);
+
+        if (lastRecordId && res.tempFilePaths.length > 0) {
+          res.tempFilePaths.forEach(path => {
+            addScreenshotToRecord(lastRecordId, path);
+          });
+        }
+      }
+    });
+  };
+
+  const handlePreviewScreenshot = (url: string) => {
+    Taro.previewImage({
+      urls: screenshots,
+      current: url
+    });
+  };
+
   const handleViewDetail = () => {
-    if (!response) return;
+    if (!response || !lastRecordId) return;
     Taro.navigateTo({
-      url: `/pages/response/index?id=${response.timestamp}`
+      url: `/pages/response/index?id=${lastRecordId}`
     });
   };
 
@@ -332,6 +362,27 @@ const DebugPage: React.FC = () => {
           value={assertNote}
           onInput={(e) => setAssertNote(e.detail.value)}
         />
+      </View>
+
+      <View className={styles.screenshotSection}>
+        <Text className={styles.screenshotTitle}>📸 错误截图</Text>
+        <View className={styles.screenshotGrid}>
+          {screenshots.map((url, index) => (
+            <View
+              key={index}
+              className={styles.screenshotItem}
+              onClick={() => handlePreviewScreenshot(url)}
+            >
+              <Image src={url} mode="aspectFill" />
+            </View>
+          ))}
+          {screenshots.length < 9 && (
+            <View className={styles.screenshotAdd} onClick={handleChooseImage}>
+              <Text className={styles.addIcon}>+</Text>
+              <Text>上传</Text>
+            </View>
+          )}
+        </View>
       </View>
 
       <View className={styles.actionRow}>
