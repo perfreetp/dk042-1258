@@ -462,3 +462,233 @@
     font-size: 40rpx;
   }
 }
+
+.screenshotDelete {
+  position: absolute;
+  top: -8rpx;
+  right: -8rpx;
+  width: 32rpx;
+  height: 32rpx;
+  background: #EF4444;
+  color: #fff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24rpx;
+  line-height: 1;
+}
+
+.draftBtn {
+  position: relative;
+  padding: 12rpx 20rpx;
+  background: rgba(99, 102, 241, 0.1);
+  border: 2rpx solid #6366F1;
+  border-radius: 12rpx;
+  font-size: 26rpx;
+  color: #6366F1;
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+}
+
+.draftBadge {
+  position: absolute;
+  top: -8rpx;
+  right: -8rpx;
+  min-width: 28rpx;
+  height: 28rpx;
+  background: #EF4444;
+  color: #fff;
+  border-radius: 14rpx;
+  font-size: 20rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 8rpx;
+}
+
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.draftPanel {
+  width: 90%;
+  max-height: 70vh;
+  background: $color-bg-card;
+  border-radius: 20rpx;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.draftPanelHeader {
+  padding: 32rpx;
+  border-bottom: 2rpx solid $color-border;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.draftPanelTitle {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: $color-text-primary;
+}
+
+.draftPanelClose {
+  font-size: 40rpx;
+  color: $color-text-tertiary;
+  line-height: 1;
+}
+
+.draftList {
+  flex: 1;
+  max-height: 50vh;
+  padding: 16rpx;
+}
+
+.draftEmpty {
+  padding: 80rpx 0;
+  text-align: center;
+  color: $color-text-tertiary;
+  font-size: 28rpx;
+}
+
+.draftItem {
+  padding: 24rpx;
+  margin-bottom: 16rpx;
+  background: $color-bg-input;
+  border-radius: 12rpx;
+  border: 2rpx solid transparent;
+  transition: all 0.2s;
+
+  &:active {
+    border-color: $color-primary;
+    background: rgba(99, 102, 241, 0.05);
+  }
+}
+
+.draftItemHeader {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  margin-bottom: 12rpx;
+}
+
+.draftItemName {
+  flex: 1;
+  font-size: 28rpx;
+  font-weight: 500;
+  color: $color-text-primary;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.draftAutoTag {
+  padding: 4rpx 12rpx;
+  background: rgba(34, 197, 94, 0.1);
+  color: #22C55E;
+  border-radius: 8rpx;
+  font-size: 22rpx;
+}
+
+.draftItemUrl {
+  font-size: 24rpx;
+  color: $color-text-secondary;
+  font-family: Menlo, Monaco, Consolas, monospace;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-bottom: 12rpx;
+}
+
+.draftItemFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.draftItemTime {
+  font-size: 22rpx;
+  color: $color-text-tertiary;
+}
+
+.draftItemDelete {
+  font-size: 24rpx;
+  color: #EF4444;
+  padding: 8rpx 16rpx;
+}
+
+.saveDraftModal {
+  width: 85%;
+  background: $color-bg-card;
+  border-radius: 20rpx;
+  padding: 40rpx 32rpx 32rpx;
+}
+
+.modalTitle {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: $color-text-primary;
+  margin-bottom: 32rpx;
+  text-align: center;
+}
+
+.modalInput {
+  width: 100%;
+  height: 88rpx;
+  background: $color-bg-input;
+  border: 2rpx solid $color-border;
+  border-radius: 12rpx;
+  padding: 0 24rpx;
+  font-size: 28rpx;
+  color: $color-text-primary;
+  margin-bottom: 40rpx;
+  box-sizing: border-box;
+}
+
+.modalActions {
+  display: flex;
+  gap: 24rpx;
+}
+
+.modalCancelBtn {
+  flex: 1;
+  height: 88rpx;
+  background: $color-bg-input;
+  border-radius: 12rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28rpx;
+  color: $color-text-secondary;
+}
+
+.modalConfirmBtn {
+  flex: 2;
+  height: 88rpx;
+  background: linear-gradient(135deg, #1E3A8A, #6366F1);
+  border-radius: 12rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28rpx;
+  color: #fff;
+  font-weight: 600;
+}
+
+.disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}

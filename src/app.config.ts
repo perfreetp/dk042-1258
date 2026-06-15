@@ -8,7 +8,8 @@ export default defineAppConfig({
     'pages/response/index',
     'pages/issue-detail/index',
     'pages/issue-create/index',
-    'pages/share/index'
+    'pages/share/index',
+    'pages/share-view/index'
   ],
   window: {
     backgroundTextStyle: 'dark',

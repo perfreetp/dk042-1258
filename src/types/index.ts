@@ -6,6 +6,19 @@ export type IssueStatus = 'pending' | 'processing' | 'resolved' | 'closed';
 
 export type Environment = 'dev' | 'test' | 'staging' | 'production';
 
+export type DraftType = 'auto' | 'manual';
+
+export type ActivityType = 
+  | 'issue_created' 
+  | 'status_changed' 
+  | 'comment_added' 
+  | 'screenshot_added'
+  | 'screenshot_removed'
+  | 'shared' 
+  | 'assigned'
+  | 'request_linked'
+  | 'description_updated';
+
 export interface EnvironmentConfig {
   id: string;
   name: string;
@@ -41,6 +54,14 @@ export interface ApiItem {
   bodyType?: 'json' | 'form' | 'raw';
 }
 
+export interface Screenshot {
+  id: string;
+  url: string;
+  createdAt: number;
+  uploader: string;
+  description?: string;
+}
+
 export interface RequestRecord {
   id: string;
   apiId?: string;
@@ -54,7 +75,7 @@ export interface RequestRecord {
   createdAt: number;
   response?: ApiResponse;
   assertNote?: string;
-  screenshots?: string[];
+  screenshotIds?: string[];
   environmentId?: string;
 }
 
@@ -66,6 +87,23 @@ export interface ApiResponse {
   duration: number;
   size: number;
   timestamp: number;
+}
+
+export interface Draft {
+  id: string;
+  apiId?: string;
+  name: string;
+  method: HttpMethod;
+  url: string;
+  headers: KeyValue[];
+  queryParams: KeyValue[];
+  body: string;
+  bodyType: 'json' | 'form' | 'raw';
+  assertNote: string;
+  screenshotIds: string[];
+  type: DraftType;
+  createdAt: number;
+  updatedAt: number;
 }
 
 export interface Issue {
@@ -80,8 +118,9 @@ export interface Issue {
   reporter: string;
   createdAt: number;
   updatedAt: number;
-  screenshots?: string[];
+  screenshotIds?: string[];
   comments?: IssueComment[];
+  activities?: IssueActivity[];
   labels?: string[];
 }
 
@@ -92,6 +131,25 @@ export interface IssueComment {
   content: string;
   createdAt: number;
   attachments?: string[];
+}
+
+export interface IssueActivity {
+  id: string;
+  type: ActivityType;
+  userId: string;
+  userName: string;
+  createdAt: number;
+  details: {
+    oldStatus?: IssueStatus;
+    newStatus?: IssueStatus;
+    comment?: string;
+    screenshotId?: string;
+    screenshotUrl?: string;
+    sharedTo?: string[];
+    assignee?: string;
+    requestId?: string;
+    requestName?: string;
+  };
 }
 
 export interface TeamMember {

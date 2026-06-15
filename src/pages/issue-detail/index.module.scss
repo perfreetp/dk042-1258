@@ -198,6 +198,133 @@
   }
 }
 
+.screenshotDelete {
+  position: absolute;
+  top: -8rpx;
+  right: -8rpx;
+  width: 32rpx;
+  height: 32rpx;
+  background: #EF4444;
+  color: #fff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24rpx;
+  line-height: 1;
+}
+
+.timeline {
+  position: relative;
+  padding-left: 32rpx;
+}
+
+.timelineItem {
+  position: relative;
+  padding-bottom: 32rpx;
+
+  &:last-child {
+    padding-bottom: 0;
+  }
+}
+
+.timelineDot {
+  position: absolute;
+  left: -32rpx;
+  top: 8rpx;
+  width: 16rpx;
+  height: 16rpx;
+  background: #6366F1;
+  border-radius: 50%;
+  z-index: 1;
+}
+
+.timelineLine {
+  position: absolute;
+  left: -25rpx;
+  top: 28rpx;
+  width: 2rpx;
+  height: calc(100% - 20rpx);
+  background: #334155;
+}
+
+.timelineContent {
+  padding-left: 16rpx;
+}
+
+.timelineHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8rpx;
+}
+
+.timelineUser {
+  font-size: 28rpx;
+  font-weight: 500;
+  color: $color-text-primary;
+}
+
+.timelineTime {
+  font-size: 22rpx;
+  color: $color-text-tertiary;
+}
+
+.timelineAction {
+  font-size: 26rpx;
+  color: $color-text-secondary;
+  line-height: 1.5;
+}
+
+.timelineComment {
+  display: block;
+  margin-top: 8rpx;
+  padding: 12rpx 16rpx;
+  background: $color-bg-input;
+  border-radius: 8rpx;
+  font-size: 24rpx;
+  color: $color-text-secondary;
+  font-style: italic;
+}
+
+.statusFlow {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(99, 102, 241, 0.05));
+  border: 2rpx solid rgba(99, 102, 241, 0.3);
+  border-radius: 16rpx;
+  padding: 24rpx;
+  margin-bottom: 24rpx;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.flowLabel {
+  font-size: 26rpx;
+  color: $color-text-secondary;
+}
+
+.flowBtn {
+  padding: 16rpx 32rpx;
+  background: linear-gradient(135deg, #1E3A8A, #6366F1);
+  border-radius: 12rpx;
+  font-size: 26rpx;
+  color: #fff;
+  font-weight: 500;
+}
+
+.screenshotItem {
+  position: relative;
+}
+
+.emptyState {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  color: $color-text-tertiary;
+  font-size: 28rpx;
+}
+
 .inputRow {
   display: flex;
   gap: $spacing-sm;

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { View, Text, Input, Textarea, ScrollView, Image } from '@tarojs/components';
 import Taro from '@tarojs/taro';
 import styles from './index.module.scss';
@@ -8,22 +8,83 @@ import MethodTag from '@/components/MethodTag';
 import StatusBadge from '@/components/StatusBadge';
 import EnvSwitcher from '@/components/EnvSwitcher';
 import { sendRequest } from '@/utils/request';
-import { formatJson, formatDuration, formatBytes, generateId } from '@/utils/format';
+import { formatJson, formatDuration, formatBytes, generateId, formatRelativeTime } from '@/utils/format';
 import classnames from 'classnames';
 
 const HTTP_METHODS: HttpMethod[] = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'HEAD', 'OPTIONS'];
 
 const DebugPage: React.FC = () => {
-  const { currentRequest, setCurrentRequest, addHistory, currentEnvId, addScreenshotToRecord } = useAppStore();
+  const {
+    currentRequest,
+    setCurrentRequest,
+    addHistory,
+    currentEnvId,
+    addScreenshot,
+    addScreenshotToRecord,
+    screenshots: allScreenshots,
+    drafts,
+    saveDraft,
+    loadDraft,
+    deleteDraft
+  } = useAppStore();
+
   const [activeTab, setActiveTab] = useState<'params' | 'headers' | 'body'>('params');
   const [activeResponseTab, setActiveResponseTab] = useState<'body' | 'headers'>('body');
   const [response, setResponse] = useState<ApiResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [showMethodDropdown, setShowMethodDropdown] = useState(false);
-  const [assertNote, setAssertNote] = useState('');
   const [bodyType, setBodyType] = useState<'json' | 'form' | 'raw'>(currentRequest.bodyType || 'json');
   const [lastRecordId, setLastRecordId] = useState<string>('');
-  const [screenshots, setScreenshots] = useState<string[]>([]);
+  const [screenshotIds, setScreenshotIds] = useState<string[]>([]);
+  const [showDraftPanel, setShowDraftPanel] = useState(false);
+  const [draftName, setDraftName] = useState('');
+  const [showSaveDraftModal, setShowSaveDraftModal] = useState(false);
+  const autoSaveTimer = useRef<NodeJS.Timeout | null>(null);
+  const autoDraftId = useRef<string>('');
+
+  const screenshots = screenshotIds.map(id => allScreenshots.find(s => s.id === id)).filter(Boolean) as any[];
+
+  useEffect(() => {
+    setBodyType(currentRequest.bodyType || 'json');
+  }, [currentRequest.bodyType]);
+
+  const autoSaveDraft = useCallback(() => {
+    if (autoSaveTimer.current) {
+      clearTimeout(autoSaveTimer.current);
+    }
+    autoSaveTimer.current = setTimeout(() => {
+      if (!currentRequest.url && !currentRequest.name) return;
+
+      const draftData = {
+        id: autoDraftId.current || undefined,
+        apiId: currentRequest.apiId,
+        name: currentRequest.name || currentRequest.url || '未命名草稿',
+        method: currentRequest.method,
+        url: currentRequest.url,
+        headers: [...currentRequest.headers],
+        queryParams: [...currentRequest.queryParams],
+        body: currentRequest.body,
+        bodyType: currentRequest.bodyType,
+        assertNote: currentRequest.assertNote || '',
+        screenshotIds: [...screenshotIds],
+        type: 'auto' as const
+      };
+
+      const saved = saveDraft(draftData);
+      if (!autoDraftId.current) {
+        autoDraftId.current = saved.id;
+      }
+    }, 2000);
+  }, [currentRequest, screenshotIds, saveDraft]);
+
+  useEffect(() => {
+    autoSaveDraft();
+    return () => {
+      if (autoSaveTimer.current) {
+        clearTimeout(autoSaveTimer.current);
+      }
+    };
+  }, [currentRequest, screenshotIds, autoSaveDraft]);
 
   const updateKeyValue = (list: KeyValue[], index: number, field: 'key' | 'value', value: string): KeyValue[] => {
     const newList = [...list];
@@ -53,10 +114,6 @@ const DebugPage: React.FC = () => {
 
     setLoading(true);
     setResponse(null);
-    console.log('[Debug] Sending request:', {
-      method: currentRequest.method,
-      url: currentRequest.url
-    });
 
     try {
       const resp = await sendRequest({
@@ -73,6 +130,7 @@ const DebugPage: React.FC = () => {
       const recordId = generateId();
       const record = {
         id: recordId,
+        apiId: currentRequest.apiId,
         name: currentRequest.name || currentRequest.url,
         method: currentRequest.method,
         url: currentRequest.url,
@@ -82,12 +140,21 @@ const DebugPage: React.FC = () => {
         bodyType,
         createdAt: Date.now(),
         response: resp,
-        assertNote,
+        assertNote: currentRequest.assertNote,
         environmentId: currentEnvId,
-        screenshots: [...screenshots]
+        screenshotIds: [...screenshotIds]
       };
       addHistory(record);
       setLastRecordId(recordId);
+
+      screenshotIds.forEach(sid => {
+        addScreenshotToRecord(recordId, sid);
+      });
+
+      if (autoDraftId.current) {
+        deleteDraft(autoDraftId.current);
+        autoDraftId.current = '';
+      }
 
       if (resp.status >= 200 && resp.status < 300) {
         Taro.showToast({ title: '请求成功', icon: 'success' });
@@ -102,22 +169,32 @@ const DebugPage: React.FC = () => {
     }
   };
 
-  const handleSave = () => {
-    Taro.showToast({ title: '调试已保存', icon: 'success' });
-  };
-
   const handleChooseImage = () => {
+    const canUpload = 9 - screenshotIds.length;
+    if (canUpload <= 0) {
+      Taro.showToast({ title: '最多上传9张', icon: 'none' });
+      return;
+    }
+
     Taro.chooseImage({
-      count: 9 - screenshots.length,
+      count: canUpload,
       sizeType: ['compressed'],
       sourceType: ['album', 'camera'],
       success: (res) => {
-        const newScreenshots = [...screenshots, ...res.tempFilePaths];
-        setScreenshots(newScreenshots);
+        const newIds: string[] = [];
+        res.tempFilePaths.forEach(path => {
+          const screenshot = addScreenshot({
+            url: path,
+            uploader: '我'
+          });
+          newIds.push(screenshot.id);
+        });
 
-        if (lastRecordId && res.tempFilePaths.length > 0) {
-          res.tempFilePaths.forEach(path => {
-            addScreenshotToRecord(lastRecordId, path);
+        setScreenshotIds(prev => [...prev, ...newIds]);
+
+        if (lastRecordId && newIds.length > 0) {
+          newIds.forEach(id => {
+            addScreenshotToRecord(lastRecordId, id);
           });
         }
       }
@@ -125,10 +202,16 @@ const DebugPage: React.FC = () => {
   };
 
   const handlePreviewScreenshot = (url: string) => {
+    const urls = screenshots.map(s => s.url);
     Taro.previewImage({
-      urls: screenshots,
+      urls,
       current: url
     });
+  };
+
+  const handleDeleteScreenshot = (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    setScreenshotIds(prev => prev.filter(sid => sid !== id));
   };
 
   const handleViewDetail = () => {
@@ -136,6 +219,48 @@ const DebugPage: React.FC = () => {
     Taro.navigateTo({
       url: `/pages/response/index?id=${lastRecordId}`
     });
+  };
+
+  const handleSaveManualDraft = () => {
+    const name = draftName.trim() || currentRequest.name || currentRequest.url || '未命名草稿';
+    saveDraft({
+      name,
+      method: currentRequest.method,
+      url: currentRequest.url,
+      headers: [...currentRequest.headers],
+      queryParams: [...currentRequest.queryParams],
+      body: currentRequest.body,
+      bodyType: currentRequest.bodyType,
+      assertNote: currentRequest.assertNote || '',
+      screenshotIds: [...screenshotIds],
+      type: 'manual'
+    });
+    setShowSaveDraftModal(false);
+    setDraftName('');
+    Taro.showToast({ title: '草稿已保存', icon: 'success' });
+  };
+
+  const handleLoadDraft = (draftId: string) => {
+    loadDraft(draftId);
+    const draft = drafts.find(d => d.id === draftId);
+    if (draft) {
+      setScreenshotIds([...draft.screenshotIds]);
+      setBodyType(draft.bodyType);
+    }
+    setShowDraftPanel(false);
+    Taro.showToast({ title: '已加载草稿', icon: 'success' });
+  };
+
+  const handleDeleteDraft = (e: React.MouseEvent, draftId: string) => {
+    e.stopPropagation();
+    deleteDraft(draftId);
+    if (autoDraftId.current === draftId) {
+      autoDraftId.current = '';
+    }
+  };
+
+  const handleNoteChange = (e: any) => {
+    setCurrentRequest({ assertNote: e.detail.value });
   };
 
   const renderParamList = (
@@ -183,11 +308,21 @@ const DebugPage: React.FC = () => {
     </View>
   );
 
+  const apiDrafts = drafts.filter(d => !d.apiId || d.apiId === currentRequest.apiId);
+
   return (
     <ScrollView className={styles.page} scrollY>
       <View className={styles.header}>
-        <Text className={styles.title}>调试面板</Text>
-        <Text className={styles.subtitle}>填写请求参数，发送并调试接口</Text>
+        <View style={{ flex: 1 }}>
+          <Text className={styles.title}>调试面板</Text>
+          <Text className={styles.subtitle}>填写请求参数，发送并调试接口</Text>
+        </View>
+        <View className={styles.draftBtn} onClick={() => setShowDraftPanel(true)}>
+          📝 草稿
+          {apiDrafts.length > 0 && (
+            <View className={styles.draftBadge}>{apiDrafts.length}</View>
+          )}
+        </View>
       </View>
 
       <View style={{ marginBottom: 24 }}>
@@ -275,19 +410,28 @@ const DebugPage: React.FC = () => {
               <View className={styles.bodyTypeSelector}>
                 <View
                   className={classnames(styles.bodyTypeOption, bodyType === 'json' && styles.active)}
-                  onClick={() => setBodyType('json')}
+                  onClick={() => {
+                    setBodyType('json');
+                    setCurrentRequest({ bodyType: 'json' });
+                  }}
                 >
                   JSON
                 </View>
                 <View
                   className={classnames(styles.bodyTypeOption, bodyType === 'form' && styles.active)}
-                  onClick={() => setBodyType('form')}
+                  onClick={() => {
+                    setBodyType('form');
+                    setCurrentRequest({ bodyType: 'form' });
+                  }}
                 >
                   Form
                 </View>
                 <View
                   className={classnames(styles.bodyTypeOption, bodyType === 'raw' && styles.active)}
-                  onClick={() => setBodyType('raw')}
+                  onClick={() => {
+                    setBodyType('raw');
+                    setCurrentRequest({ bodyType: 'raw' });
+                  }}
                 >
                   Raw
                 </View>
@@ -359,24 +503,27 @@ const DebugPage: React.FC = () => {
           className={styles.noteInput}
           placeholder="记录测试结果、断言条件或备注信息..."
           placeholderTextColor="#64748B"
-          value={assertNote}
-          onInput={(e) => setAssertNote(e.detail.value)}
+          value={currentRequest.assertNote || ''}
+          onInput={handleNoteChange}
         />
       </View>
 
       <View className={styles.screenshotSection}>
         <Text className={styles.screenshotTitle}>📸 错误截图</Text>
         <View className={styles.screenshotGrid}>
-          {screenshots.map((url, index) => (
+          {screenshots.map((s) => (
             <View
-              key={index}
+              key={s.id}
               className={styles.screenshotItem}
-              onClick={() => handlePreviewScreenshot(url)}
+              onClick={() => handlePreviewScreenshot(s.url)}
             >
-              <Image src={url} mode="aspectFill" />
+              <Image src={s.url} mode="aspectFill" />
+              <View className={styles.screenshotDelete} onClick={(e) => handleDeleteScreenshot(e, s.id)}>
+                ×
+              </View>
             </View>
           ))}
-          {screenshots.length < 9 && (
+          {screenshotIds.length < 9 && (
             <View className={styles.screenshotAdd} onClick={handleChooseImage}>
               <Text className={styles.addIcon}>+</Text>
               <Text>上传</Text>
@@ -386,13 +533,85 @@ const DebugPage: React.FC = () => {
       </View>
 
       <View className={styles.actionRow}>
-        <View className={styles.secondaryBtn} onClick={handleSave}>
-          保存调试
+        <View className={styles.secondaryBtn} onClick={() => setShowSaveDraftModal(true)}>
+          💾 存为草稿
         </View>
-        <View className={styles.primaryBtn} onClick={handleViewDetail}>
+        <View
+          className={classnames(styles.primaryBtn, !response && styles.disabled)}
+          onClick={handleViewDetail}
+        >
           查看详情
         </View>
       </View>
+
+      {showDraftPanel && (
+        <View className={styles.modalOverlay} onClick={() => setShowDraftPanel(false)}>
+          <View className={styles.draftPanel} onClick={(e) => e.stopPropagation()}>
+            <View className={styles.draftPanelHeader}>
+              <Text className={styles.draftPanelTitle}>草稿箱</Text>
+              <Text className={styles.draftPanelClose} onClick={() => setShowDraftPanel(false)}>
+                ×
+              </Text>
+            </View>
+            <ScrollView className={styles.draftList} scrollY>
+              {apiDrafts.length === 0 && (
+                <View className={styles.draftEmpty}>
+                  <Text>暂无草稿</Text>
+                </View>
+              )}
+              {apiDrafts.map(draft => (
+                <View key={draft.id} className={styles.draftItem} onClick={() => handleLoadDraft(draft.id)}>
+                  <View className={styles.draftItemHeader}>
+                    <MethodTag method={draft.method} />
+                    <Text className={styles.draftItemName}>{draft.name}</Text>
+                    {draft.type === 'auto' && (
+                      <Text className={styles.draftAutoTag}>自动</Text>
+                    )}
+                  </View>
+                  <Text className={styles.draftItemUrl}>{draft.url}</Text>
+                  <View className={styles.draftItemFooter}>
+                    <Text className={styles.draftItemTime}>
+                      {formatRelativeTime(draft.updatedAt)}
+                    </Text>
+                    <Text
+                      className={styles.draftItemDelete}
+                      onClick={(e) => handleDeleteDraft(e, draft.id)}
+                    >
+                      删除
+                    </Text>
+                  </View>
+                </View>
+              ))}
+            </ScrollView>
+          </View>
+        </View>
+      )}
+
+      {showSaveDraftModal && (
+        <View className={styles.modalOverlay} onClick={() => setShowSaveDraftModal(false)}>
+          <View className={styles.saveDraftModal} onClick={(e) => e.stopPropagation()}>
+            <Text className={styles.modalTitle}>保存草稿</Text>
+            <Input
+              className={styles.modalInput}
+              placeholder="输入草稿名称"
+              placeholderTextColor="#64748B"
+              value={draftName}
+              onInput={(e) => setDraftName(e.detail.value)}
+            />
+            <View className={styles.modalActions}>
+              <View
+                className={styles.modalCancelBtn}
+                onClick={() => setShowSaveDraftModal(false)}
+              >
+                取消
+              </View>
+              <View className={styles.modalConfirmBtn} onClick={handleSaveManualDraft}>
+                保存
+              </View>
+            </View>
+          </View>
+        </View>
+      )}
     </ScrollView>
   );
 };

@@ -19,7 +19,7 @@ type PermissionType = 'view' | 'comment' | 'edit';
 
 const SharePage: React.FC = () => {
   const router = useRouter();
-  const { history, issues } = useAppStore();
+  const { history, issues, addIssueActivity } = useAppStore();
   const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
   const [permission, setPermission] = useState<PermissionType>('view');
 
@@ -59,9 +59,24 @@ const SharePage: React.FC = () => {
       Taro.showToast({ title: '请选择分享对象', icon: 'none' });
       return;
     }
+
     Taro.showToast({ title: '分享成功', icon: 'success' });
+
+    if (shareType === 'issue' && shareContent) {
+      addIssueActivity(shareId, {
+        type: 'shared',
+        userId: 'me',
+        userName: '我',
+        details: {
+          sharedTo: selectedMembers
+        }
+      });
+    }
+
     setTimeout(() => {
-      Taro.navigateBack();
+      Taro.redirectTo({
+        url: `/pages/share-view/index?type=${shareType}&id=${shareId}`
+      });
     }, 1500);
   };
 

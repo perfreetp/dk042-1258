@@ -5,6 +5,9 @@ const STORAGE_KEYS = {
   FAVORITES: 'api_debug_favorites',
   ISSUES: 'api_debug_issues',
   CURRENT_ENV: 'api_debug_current_env',
+  DRAFTS: 'api_debug_drafts',
+  SCREENSHOTS: 'api_debug_screenshots',
+  CURRENT_REQUEST: 'api_debug_current_request',
   INITIALIZED: 'api_debug_initialized'
 };
 
